@@ -1,0 +1,683 @@
+<title>Project Review Document 1</title>
+<meta name="description" content="Satellite-driven AI pipeline for illegal mining detection: literature review and architecture justification">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,600;6..72,700&family=Source+Sans+3:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root {
+    --bg: #F5F6F3;
+    --surface: #FFFFFF;
+    --border: #D7DCD3;
+    --border-strong: #B9C2B4;
+    --text: #1E2420;
+    --text-dim: #5C6960;
+    --accent: #A8632A;
+    --accent-soft: #A8632A14;
+    --accent-2: #3F7357;
+    --accent-2-soft: #3F735714;
+    --shadow: 0 1px 2px rgba(20,30,22,0.05), 0 6px 20px rgba(20,30,22,0.06);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #14181A;
+      --surface: #1B211F;
+      --border: #2C3632;
+      --border-strong: #3D4A44;
+      --text: #E7EAE6;
+      --text-dim: #97A39B;
+      --accent: #D9924A;
+      --accent-soft: #D9924A22;
+      --accent-2: #5FA37D;
+      --accent-2-soft: #5FA37D22;
+      --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px rgba(0,0,0,0.35);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #14181A;
+    --surface: #1B211F;
+    --border: #2C3632;
+    --border-strong: #3D4A44;
+    --text: #E7EAE6;
+    --text-dim: #97A39B;
+    --accent: #D9924A;
+    --accent-soft: #D9924A22;
+    --accent-2: #5FA37D;
+    --accent-2-soft: #5FA37D22;
+    --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px rgba(0,0,0,0.35);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Source Sans 3", system-ui, sans-serif;
+    font-size: 16px;
+    line-height: 1.65;
+  }
+  .page {
+    max-width: 780px;
+    margin: 0 auto;
+    padding: 56px 24px 100px;
+  }
+  h1, h2, h3 { font-family: "Newsreader", Georgia, serif; text-wrap: balance; color: var(--text); }
+  .mono { font-family: "IBM Plex Mono", ui-monospace, monospace; }
+
+  .doc-header { margin-bottom: 48px; }
+  .doc-kicker {
+    font-family: "IBM Plex Mono", monospace; font-size: 12px; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--accent); margin-bottom: 10px;
+  }
+  .doc-header h1 { font-size: 34px; font-weight: 700; line-height: 1.15; margin: 0 0 10px; }
+  .doc-header .subtitle { font-size: 17px; color: var(--text-dim); font-family: "Newsreader", serif; font-style: italic; }
+  .doc-meta {
+    margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--border);
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px 24px;
+    font-size: 13px; color: var(--text-dim);
+  }
+  .doc-meta dt { font-family: "IBM Plex Mono", monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; }
+  .doc-meta dd { margin: 0; color: var(--text); }
+  .doc-meta .placeholder { color: var(--accent); font-style: italic; }
+
+  section { margin-top: 46px; }
+  h2 {
+    font-size: 23px; font-weight: 600; margin: 0 0 4px;
+    display: flex; align-items: baseline; gap: 10px;
+  }
+  h2 .num { font-family: "IBM Plex Mono", monospace; font-size: 15px; color: var(--accent); font-weight: 500; }
+  h3 { font-size: 18px; font-weight: 600; margin: 26px 0 6px; }
+  h3 .num { font-family: "IBM Plex Mono", monospace; font-size: 13px; color: var(--accent-2); font-weight: 500; margin-right: 8px; }
+
+  p { margin: 14px 0; }
+  ul, ol { margin: 14px 0; padding-left: 24px; }
+  li { margin: 6px 0; }
+  strong { font-weight: 600; }
+
+  .objective-list { list-style: none; padding-left: 0; margin: 18px 0; }
+  .objective-list li {
+    background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--accent-2);
+    border-radius: 6px; padding: 14px 16px; margin: 10px 0;
+  }
+  .objective-list .obj-tag { font-family: "IBM Plex Mono", monospace; font-weight: 600; color: var(--accent-2); margin-right: 6px; }
+
+  .citation-ref {
+    font-family: "IBM Plex Mono", monospace; font-size: 13px; color: var(--accent);
+    text-decoration: none; padding: 0 2px;
+  }
+  .citation-ref:hover { text-decoration: underline; }
+
+  .paper-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+    padding: 18px 20px; margin: 16px 0; box-shadow: var(--shadow);
+  }
+  .paper-card .paper-title { font-family: "Newsreader", serif; font-size: 17px; font-weight: 600; margin: 0 0 4px; }
+  .paper-card .paper-meta { font-size: 13px; color: var(--text-dim); margin-bottom: 10px; }
+  .paper-card .venue-tag {
+    display: inline-block; font-family: "IBM Plex Mono", monospace; font-size: 10px;
+    letter-spacing: 0.04em; text-transform: uppercase; padding: 2px 7px; border-radius: 4px;
+    margin-left: 6px; border: 1px solid var(--border-strong);
+  }
+  .venue-tag.peer-reviewed { background: var(--accent-2-soft); color: var(--accent-2); border-color: var(--accent-2); }
+  .venue-tag.preprint { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); }
+  .venue-tag.industry { background: var(--border); color: var(--text-dim); }
+  .paper-card .relevance {
+    font-size: 14px; margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--border);
+  }
+  .paper-card .relevance .label { font-family: "IBM Plex Mono", monospace; font-size: 11px; text-transform: uppercase; color: var(--text-dim); letter-spacing: 0.04em; }
+
+  table {
+    width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 14px;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 8px; overflow: hidden;
+  }
+  th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { font-family: "IBM Plex Mono", monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.03em; color: var(--text-dim); background: var(--bg); }
+  tr:last-child td { border-bottom: none; }
+  .table-wrap { overflow-x: auto; }
+  .num-cell { font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; }
+
+  .callout {
+    background: var(--accent-soft); border: 1px solid var(--accent); border-radius: 8px;
+    padding: 14px 16px; margin: 18px 0; font-size: 14px;
+  }
+  .callout .label { font-family: "IBM Plex Mono", monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--accent); margin-bottom: 4px; display: block; }
+
+  .status-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+    padding: 16px 18px; margin: 14px 0;
+  }
+  .status-card h4 { font-family: "IBM Plex Mono", monospace; font-size: 13px; font-weight: 600; margin: 0 0 8px; color: var(--accent-2); }
+
+  .metric-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 16px 0; }
+  .metric-tile {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+    padding: 12px 14px; text-align: center;
+  }
+  .metric-tile .value { font-family: "IBM Plex Mono", monospace; font-size: 22px; font-weight: 600; color: var(--text); }
+  .metric-tile .label { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+  @media (max-width: 600px) { .metric-row { grid-template-columns: repeat(2, 1fr); } }
+
+  .refs { padding-left: 0; list-style: none; }
+  .refs li { display: flex; gap: 10px; margin: 14px 0; font-size: 14px; }
+  .refs .ref-num { font-family: "IBM Plex Mono", monospace; color: var(--accent); flex-shrink: 0; }
+  .refs a { color: var(--text); }
+  .refs a:hover { color: var(--accent); }
+
+  code { font-family: "IBM Plex Mono", monospace; font-size: 0.9em; background: var(--border); padding: 1px 5px; border-radius: 4px; }
+
+  hr.section-divider { border: none; border-top: 1px solid var(--border); margin: 46px 0 0; }
+
+  footer.doc-footer {
+    margin-top: 56px; padding-top: 20px; border-top: 1px solid var(--border);
+    font-size: 12px; color: var(--text-dim);
+  }
+</style>
+
+<div class="page">
+  <header class="doc-header">
+    <div class="doc-kicker">Project Review Document 1</div>
+    <h1>Satellite-Driven AI for Illegal Mining Detection</h1>
+    <div class="subtitle">A Sentinel-2 monitoring pipeline: literature review, architecture, and implementation status</div>
+    <dl class="doc-meta">
+      <dt>Team / Author</dt><dd class="placeholder">[Your name(s)]</dd>
+      <dt>Course / Institution</dt><dd class="placeholder">[Course and institution]</dd>
+      <dt>Pilot region</dt><dd>Madre de Dios, Peru (La Pampa mining front)</dd>
+      <dt>Date</dt><dd class="placeholder">[Submission date]</dd>
+    </dl>
+  </header>
+
+  <section id="intro">
+    <h2><span class="num">1</span> Introduction and Motivation</h2>
+    <p>
+      Illegal and unregulated mining is among the most significant drivers of anthropogenic
+      land degradation in resource-rich developing and emerging economies. Its consequences
+      extend beyond direct excavation footprints to encompass large-scale deforestation,
+      irreversible topsoil and hydrological disturbance, heavy-metal and sediment-based
+      contamination of downstream water bodies, and the destabilisation of protected and
+      indigenous territories. In many jurisdictions, illegal operations are deliberately
+      established in remote, low-accessibility terrain specifically to evade conventional
+      ground-based regulatory inspection, rendering manual, field-survey-driven monitoring
+      both logistically infeasible and economically unsustainable at a national or
+      continental scale.
+    </p>
+    <p>
+      The proliferation of freely accessible, high-revisit-frequency Earth Observation (EO)
+      constellations &mdash; most notably the Copernicus Sentinel-2 multispectral mission,
+      accessible through the Copernicus Data Space Ecosystem &mdash; has fundamentally
+      altered the feasibility of continuous, wide-area environmental surveillance. However,
+      the raw volume, spectral complexity, and temporal density of this data render manual
+      visual interpretation impractical beyond localised case studies. This motivates the
+      central problem statement addressed by the present project: the design and
+      implementation of an automated, satellite-driven AI pipeline capable of (i) detecting
+      candidate mining-disturbed land, (ii) quantifying spatio-temporal change indicative of
+      active excavation, (iii) isolating unpermitted or suspicious extraction footprints
+      from legally licensed operations, and (iv) generating actionable, geo-referenced
+      alerts for regulatory authorities.
+    </p>
+    <p>
+      This document constitutes Project Review Document 1 and establishes the academic and
+      technical foundation for the proposed system through a structured review of five
+      research contributions published in 2026, each directly relevant to satellite-based
+      change detection, surface mining surveillance, or hybrid geospatial deep learning
+      architectures. The review is intended to substantiate the architectural and
+      methodological choices adopted in the implemented prototype, and to be evaluated by
+      the university review panel against the standard of current research in the domain.
+    </p>
+  </section>
+
+  <section id="problem">
+    <h2><span class="num">2</span> Problem Statement</h2>
+    <p>
+      Conventional monitoring of surface mining activity relies predominantly on periodic
+      manual inspection, community reporting, and ad hoc visual interpretation of satellite
+      imagery by regulatory personnel. This approach does not scale to the spatial extent
+      and temporal frequency required to detect illegal excavation before substantial
+      ecological damage has occurred, particularly in low-accessibility forested or riverine
+      terrain where illegal operations are disproportionately concentrated. The literature
+      reviewed in Section 3 confirms that deep-learning-based segmentation and
+      change-detection models can reliably automate this task at a per-pixel level; however,
+      no single reviewed architecture jointly addresses all four functional requirements of
+      a deployable monitoring pipeline &mdash; candidate-area detection, temporal change
+      quantification, licensed-versus-unlicensed footprint discrimination, and actionable
+      alert generation. This project formulates its problem statement as the design and
+      prototype implementation of an integrated pipeline that combines these four stages
+      into a single, Sentinel-2-driven workflow.
+    </p>
+  </section>
+
+  <section id="literature">
+    <h2><span class="num">3</span> Literature Review</h2>
+    <p>
+      Five 2026 research contributions were reviewed, spanning three themes directly
+      relevant to this project's architecture: mining-specific change detection, a
+      dedicated benchmark for illegal mining in the exact biome and activity type this
+      project targets, and methodological choices (lightweight architectures, class-imbalance
+      handling) that this project's implementation adopts directly. Venue type is marked
+      explicitly below &mdash; one contribution is a peer-reviewed journal article, three are
+      2026 arXiv preprints (standard practice for citing current work in fast-moving ML
+      subfields), and one is an operational industry deployment report rather than an
+      academic publication.
+    </p>
+
+    <h3><span class="num">3.1</span> Bi-temporal change detection for open-pit mining</h3>
+    <div class="paper-card">
+      <div class="paper-title">
+        Global&ndash;Local Feature Fusion Network for Remote Sensing Image Change Detection
+        in Open-Pit Mining Areas
+        <span class="venue-tag peer-reviewed">Peer-reviewed</span>
+      </div>
+      <div class="paper-meta">
+        Zheng, Z., Yang, J., Lv, G., Li, Q., Wang, Y. &middot; <em>Sensors</em> 26(10), 2026 &middot;
+        DOI: <a href="https://doi.org/10.3390/s26103128" class="citation-ref">10.3390/s26103128</a>
+      </div>
+      <p>
+        Proposes GLMECD-Net, a Siamese-encoder change-detection network purpose-built for
+        open-pit mining regions, where mining-related changes exhibit "multi-scale patterns,
+        irregular boundaries, and fragmented spatial distributions" that generic
+        change-detection architectures handle poorly. A global&ndash;local fusion module jointly
+        captures long-range context and local spatial detail across two temporal images,
+        achieving 83.78% overall accuracy and 77.53% F1 on benchmark open-pit datasets.
+      </p>
+      <div class="relevance">
+        <span class="label">Relevance to this project</span>
+        <p style="margin:6px 0 0;">
+          Directly validates O3's premise &mdash; that mining-area change detection needs
+          treatment distinct from generic land-cover change detection. This project's
+          change_detection.py addresses the same irregular/fragmented-footprint problem via
+          per-scene probability normalization and connected-component blob filtering rather
+          than a learned fusion network, trading architectural sophistication for a
+          dramatically smaller labeled-data requirement (see Section 5).
+        </p>
+      </div>
+    </div>
+
+    <h3><span class="num">3.2</span> A dedicated benchmark for illegal Amazon gold mining</h3>
+    <div class="paper-card">
+      <div class="paper-title">
+        ELDOR: A Dataset and Benchmark for Illegal Gold Mining in the Amazon Rainforest
+        <span class="venue-tag preprint">arXiv preprint</span>
+      </div>
+      <div class="paper-meta">
+        Cui, K., Bohara, S., Prasai, S., Shao, Z., Tang, W., Pillaca, M., Flores, E., Yang, Z.,
+        Larsen, G., Dethier, E., Lutz, D., Morel, J.-M., Silman, M., Pauca, V., Yang, F. &middot;
+        arXiv:2605.15397, May 2026
+      </div>
+      <p>
+        Introduces ELDOR, a UAV-based orthomosaic dataset covering over 2,500 hectares with
+        pixel-level semantic labels for mining activity and surrounding ecological structure,
+        spanning four evaluation tasks (segmentation, recognition, multi-label classification,
+        vision-language). The authors report that "current methods still struggle with rare
+        small-scale mining structures and fine-grained recovery classes" &mdash; exactly the
+        artisanal, fragmented mining pattern documented in this project's pilot region.
+      </p>
+      <div class="relevance">
+        <span class="label">Relevance to this project</span>
+        <p style="margin:6px 0 0;">
+          Corroborates this project's own empirical finding (Section 6.3): a model trained
+          on the "easy" extremes of the mining/non-mining spectrum systematically
+          under-performs on rare, small, or ambiguous cases &mdash; the exact "small-scale mining
+          structures" failure mode ELDOR documents. This project's response (hard-case
+          labeling and retraining, hard_case_labels.py) is a lightweight, tabular-classifier
+          analogue of the same problem ELDOR's benchmark is designed to expose in
+          segmentation models.
+        </p>
+      </div>
+    </div>
+
+    <h3><span class="num">3.3</span> Architecture-efficiency trade-offs in satellite segmentation</h3>
+    <div class="paper-card">
+      <div class="paper-title">
+        When Less Is More: A Controlled Benchmark of Lightweight CNNs for Satellite
+        Land-Cover Segmentation on DeepGlobe
+        <span class="venue-tag preprint">arXiv preprint</span>
+      </div>
+      <div class="paper-meta">
+        Rehman, A. U., Donovan, J. M. &middot; arXiv:2607.23024, July 2026
+      </div>
+      <p>
+        A controlled comparison of five CNN architectures under identical
+        preprocessing/training protocols finds that MobileNetV2 (24.98&nbsp;MB) achieves
+        79.06% accuracy and 0.4625 mean IoU on DeepGlobe land-cover segmentation, outperforming
+        substantially larger models including VGG16 (71.13&nbsp;MB) and InceptionV3
+        (125.17&nbsp;MB). Critically, the authors find that "architectural optimization alone
+        cannot optimize spectrally similar minority classes," with persistent
+        rangeland&ndash;barren confusion regardless of model size.
+      </p>
+      <div class="relevance">
+        <span class="label">Relevance to this project</span>
+        <p style="margin:6px 0 0;">
+          Directly supports this project's core architectural decision (Section 5.1): given
+          no labeled segmentation dataset exists for this specific AOI, a lightweight,
+          fast-training classifier is preferable to a heavy segmentation CNN, and &mdash; per
+          this paper's own finding &mdash; a bigger model would not by itself solve the
+          spectral-confusion problem this project encountered empirically (moderate
+          vegetation loss vs. mining, Section 6.3). This is external confirmation that the
+          project's fix (real hard-negative labels, not a larger model) targets the correct
+          failure mode.
+        </p>
+      </div>
+    </div>
+
+    <h3><span class="num">3.4</span> An operational precedent: continent-scale deployment</h3>
+    <div class="paper-card">
+      <div class="paper-title">
+        Amazon Mining Watch: AI-Powered, Continent-Wide Gold Mining Deforestation Monitoring
+        <span class="venue-tag industry">Industry deployment</span>
+      </div>
+      <div class="paper-meta">
+        Amazon Conservation Association, in partnership with regional monitoring
+        organizations &middot; reported via Mongabay, April 2026
+      </div>
+      <p>
+        A deployed (not merely research-stage) AI system applying "a unified methodology for
+        the whole Amazon" to detect mining-driven deforestation via satellite imagery,
+        publishing quarterly reports across all nine Amazonian nations. Reports 6,000 ha of
+        Q4-2025 mining deforestation and 496,000 ha cumulatively since 2018, with Peru
+        specifically accounting for 1,700 ha in the most recent quarter. The platform also
+        estimates the monetary socio-environmental cost of detected mining.
+      </p>
+      <div class="relevance">
+        <span class="label">Relevance to this project</span>
+        <p style="margin:6px 0 0;">
+          Establishes both the feasibility and the real-world demand for exactly this
+          project's problem statement at operational scale, and provides an independent,
+          real-world magnitude check: this project's pilot-AOI detection (Section 6.4, ~1,519
+          ha/year illegal disturbance in a single tile over La Pampa) is consistent in order
+          of magnitude with Amazon Mining Watch's reported Peru-wide quarterly figures,
+          lending external plausibility to the pipeline's output.
+        </p>
+      </div>
+    </div>
+
+    <h3><span class="num">3.5</span> Class-imbalance handling for minority-class detection</h3>
+    <div class="paper-card">
+      <div class="paper-title">
+        QC-SMOTE: Quality-Controlled SMOTE for Imbalanced Classification
+        <span class="venue-tag preprint">arXiv preprint</span>
+      </div>
+      <div class="paper-meta">
+        Upman, P., Gowda, S. N. &middot; arXiv:2606.24625, June 2026
+      </div>
+      <p>
+        Proposes a quality-controlled extension to standard SMOTE that scores minority-sample
+        trustworthiness via a composite neighbourhood metric (local density, safe-level,
+        isolation from the majority class) before generating synthetic examples, with
+        low-quality synthetic samples replaced by minority duplicates in noisy regions.
+        Across 30 imbalanced benchmark datasets, QC-SMOTE improves average AUC-ROC and Macro
+        F1 over standard oversampling, with the largest gains under moderate-to-severe
+        imbalance &mdash; precisely the regime mining-pixel detection sits in (mining pixels
+        are a small minority of any scene).
+      </p>
+      <div class="relevance">
+        <span class="label">Relevance to this project</span>
+        <p style="margin:6px 0 0;">
+          Directly informs O2's methodology: this project's model_selection.py already
+          applies standard SMOTE to the training split before comparing algorithms, on
+          exactly the class-imbalance regime (mining vs. non-mining pixels) this paper
+          targets. QC-SMOTE is identified as the concrete next upgrade path &mdash; standard
+          SMOTE can generate synthetic minority samples in low-density or noisy regions of
+          feature space (e.g. near the ambiguous-vegetation confusion documented in Section
+          6.3), which is exactly the failure mode QC-SMOTE's trustworthiness scoring is
+          designed to suppress.
+        </p>
+      </div>
+    </div>
+
+    <h3><span class="num">3.6</span> Table 1: Comparative baselines</h3>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Source</th><th>Task</th><th>Method</th><th>Reported metric</th><th>This project's counterpart</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Zheng et al. [1]</td>
+            <td>Open-pit change detection</td>
+            <td>Siamese global&ndash;local fusion CNN</td>
+            <td class="num-cell">83.78% acc, 77.53% F1</td>
+            <td>change_detection.py (probability-diff + blob filter)</td>
+          </tr>
+          <tr>
+            <td>Cui et al. [2]</td>
+            <td>Illegal mining segmentation</td>
+            <td>UAV benchmark, multiple DL baselines</td>
+            <td class="num-cell">Struggles on rare/small-scale mining</td>
+            <td>real_labels.py + hard_case_labels.py</td>
+          </tr>
+          <tr>
+            <td>Rehman &amp; Donovan [3]</td>
+            <td>Land-cover segmentation</td>
+            <td>MobileNetV2 vs. VGG16/InceptionV3</td>
+            <td class="num-cell">79.06% acc, best lightweight model</td>
+            <td>model_selection.py (5-algorithm tabular comparison)</td>
+          </tr>
+          <tr>
+            <td>Amazon Mining Watch [4]</td>
+            <td>Continent-scale monitoring, deployed</td>
+            <td>Unspecified AI, quarterly reports</td>
+            <td class="num-cell">1,700 ha/quarter (Peru)</td>
+            <td>real_run.py, ~1,519 ha/yr (single AOI tile)</td>
+          </tr>
+          <tr>
+            <td>Upman &amp; Gowda [5]</td>
+            <td>Imbalanced classification</td>
+            <td>Quality-controlled SMOTE</td>
+            <td class="num-cell">Improved AUC-ROC / Macro F1</td>
+            <td>model_selection.py (standard SMOTE, this project's held-out F1 0.909)</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="objectives">
+    <h2><span class="num">4</span> Project Objectives</h2>
+    <ul class="objective-list">
+      <li><span class="obj-tag">O1</span><strong>Data Pipeline:</strong> Acquire and preprocess multi-temporal Sentinel-2 Level-2A imagery via the Copernicus Data Space Ecosystem for one or more pilot regions exhibiting known or suspected illegal mining activity.</li>
+      <li><span class="obj-tag">O2</span><strong>Mining-Area Detection:</strong> Implement a semantic segmentation model capable of delineating mining-disturbed terrain from surrounding land cover with a target Intersection-over-Union (IoU) benchmarked against the 2026 literature baselines summarised in Table 1.</li>
+      <li><span class="obj-tag">O3</span><strong>Change Detection:</strong> Implement a bi-temporal change-detection mechanism to isolate newly disturbed or expanding excavation footprints between successive observation dates.</li>
+      <li><span class="obj-tag">O4</span><strong>Suspicious-Area Isolation:</strong> Cross-reference detected footprints against publicly available licensed-mining-lease boundaries (where obtainable) to generate a confidence-scored suspicious-area heatmap distinguishing probable illegal activity from permitted operations.</li>
+      <li><span class="obj-tag">O5</span><strong>Alert Generation:</strong> Export detections as geo-referenced GeoJSON polygons with associated confidence metrics, suitable for ingestion by a downstream alert-notification mechanism for regulatory stakeholders.</li>
+    </ul>
+  </section>
+
+  <section id="architecture">
+    <h2><span class="num">5</span> Implemented Architecture</h2>
+    <p>
+      Per Section 2's gap analysis, no single reviewed architecture jointly addresses all
+      four functional stages. The implemented prototype integrates them into one
+      Sentinel-2-driven pipeline, deliberately favoring a tabular spectral-feature classifier
+      over a segmentation CNN for O2 (justified directly by [3]'s finding that architectural
+      scale does not resolve spectral-confusion failure modes, and by the complete absence of
+      a labeled segmentation dataset for this specific AOI).
+    </p>
+
+    <h3><span class="num">5.1</span> Pipeline stages</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Stage</th><th>Objective</th><th>Approach</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">O1</td><td>Data acquisition</td><td>CDSE OAuth2 authentication, STAC catalog search, direct S3 band download (bypassing the unreliable full-product OData endpoint), AOI cropping</td></tr>
+          <tr><td class="mono">O2</td><td>Detection</td><td>NDVI/NDMI/BSI/NDWI spectral features + raw bands &rarr; five-algorithm comparison (Logistic Regression L1/L2, Random Forest, SVM, Gradient Boosting) with SMOTE and stratified holdout/10-fold CV, best model auto-selected</td></tr>
+          <tr><td class="mono">O3</td><td>Change detection</td><td>Per-scene feature re-normalization (correcting for cross-date atmospheric/seasonal drift) then probability-difference thresholding with connected-component noise filtering</td></tr>
+          <tr><td class="mono">O4</td><td>Legal discrimination</td><td>Three-tier classification (legal / disputed / illegal) against real government concession-status data, not a binary licensed/unlicensed split</td></tr>
+          <tr><td class="mono">O5</td><td>Alerting</td><td>GeoJSON polygon export with legal_status, confidence, and area per detection</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3><span class="num">5.2</span> Ground truth: real government data, not synthetic labels</h3>
+    <p>
+      O2's classifier is trained on real ground truth sourced from RAISG (Red Amaz&oacute;nica
+      de Informaci&oacute;n Socioambiental Georreferenciada) mining-concession polygons, not
+      synthetic or self-referential percentile-threshold labels. Legal and illegal mining
+      share an identical excavated-bare-soil spectral signature &mdash; only administrative
+      status differs &mdash; so active/titled concession interiors are a genuine positive-label
+      source, and land more than 300&nbsp;m from any concession with high NDVI is a genuine
+      negative source. O4 reuses these same real concession polygons, extended with a
+      three-tier legal-status distinction (active / frozen&ndash;pending / none) that matches
+      Peruvian mining-concession law more precisely than a binary licensed/unlicensed split.
+    </p>
+  </section>
+
+  <section id="results">
+    <h2><span class="num">6</span> Implementation Status and Results</h2>
+    <p>
+      The full O1&ndash;O5 pipeline has been implemented and run against real Sentinel-2
+      imagery over the La Pampa mining front, Madre de Dios, Peru &mdash; not only
+      demonstrated on synthetic data.
+    </p>
+
+    <h3><span class="num">6.1</span> O2: Algorithm comparison</h3>
+    <p>
+      Five algorithms were trained and compared per O2's methodology; the best-scoring model
+      (Random Forest) was auto-selected for the deployed pipeline.
+    </p>
+    <div class="metric-row">
+      <div class="metric-tile"><div class="value">0.998</div><div class="label">F1 (test split)</div></div>
+      <div class="metric-tile"><div class="value">0.997</div><div class="label">IoU (test split)</div></div>
+      <div class="metric-tile"><div class="value">252</div><div class="label">Concessions used</div></div>
+      <div class="metric-tile"><div class="value">77</div><div class="label">Active/titled</div></div>
+    </div>
+
+    <h3><span class="num">6.2</span> O3/O4: Change detection and legal classification</h3>
+    <p>
+      Applied to the pilot AOI comparing the same calendar date one year apart (controlling
+      for seasonal vegetation phenology, Section 7):
+    </p>
+    <div class="metric-row">
+      <div class="metric-tile"><div class="value">1,776.5</div><div class="label">ha new disturbance</div></div>
+      <div class="metric-tile"><div class="value">1,518.7</div><div class="label">ha illegal</div></div>
+      <div class="metric-tile"><div class="value">221.2</div><div class="label">ha disputed</div></div>
+      <div class="metric-tile"><div class="value">1,845</div><div class="label">alert polygons</div></div>
+    </div>
+
+    <h3><span class="num">6.3</span> Independent validation on ambiguous cases</h3>
+    <p>
+      Beyond the algorithm-comparison metrics above &mdash; which measure performance on the
+      "easy" extremes of the training distribution &mdash; a stratified sample of 40
+      genuinely ambiguous locations (near-concession boundaries, river sandbars, the model's
+      own 50/50-probability cases, undiscovered bare patches, mid-range vegetation) was hand
+      labeled via a purpose-built shared labeling tool. This surfaced a real, specific
+      weakness: the model over-flagged moderate vegetation loss (fallow land, agriculture,
+      regrowth) as mining, traced to feature importances that ranked NDVI/NDWI above the more
+      mining-specific BSI/NDMI signal &mdash; consistent with [3]'s finding that this class of
+      spectral confusion is architecture-independent.
+    </p>
+    <div class="callout">
+      <span class="label">Fix and honest evaluation</span>
+      Rather than hand-tuning feature weights, the hand labels were folded directly into
+      training (stratified 50/50 split, no leakage between the training and evaluation
+      halves). F1 on the held-out half improved from <strong>0.833 to 0.909</strong>
+      (precision 0.714&nbsp;&rarr;&nbsp;0.833, recall held at a perfect 1.000).
+    </div>
+
+    <h3><span class="num">6.4</span> External plausibility check</h3>
+    <p>
+      The pilot AOI's detected illegal-mining rate (~1,519&nbsp;ha/year in a single Sentinel-2
+      tile) is consistent in order of magnitude with Amazon Mining Watch's independently
+      reported Peru-wide quarterly figures [4] (~1,700&nbsp;ha/quarter nationally), providing
+      an external sanity check against a deployed real-world system rather than only
+      internal cross-validation.
+    </p>
+  </section>
+
+  <section id="limitations">
+    <h2><span class="num">7</span> Limitations and Threats to Validity</h2>
+    <ol>
+      <li>
+        <strong>Sample size on hard-case validation.</strong> The 40-chip ambiguous-case
+        evaluation (Section 6.3) currently reflects a single labeler; inter-rater agreement
+        has not yet been measured. The labeling tool supports additional labelers on the
+        same chip set without code changes.
+      </li>
+      <li>
+        <strong>Seasonal phenology confound (resolved).</strong> An initial June-vs-August
+        comparison conflated dry-season vegetation stress with mining-driven land-cover
+        change (verified: scene-wide NDVI dropped 0.48&rarr;0.32 with no plausible mining
+        cause). Resolved by comparing the same calendar date one year apart instead, which
+        holds sun angle and seasonal phenology approximately constant.
+      </li>
+      <li>
+        <strong>Single pilot AOI.</strong> All quantitative results are from one Sentinel-2
+        tile over Madre de Dios; generalization to other mining biomes (e.g. hard-rock mining
+        in arid terrain, which produces a different spectral signature than Amazonian
+        alluvial gold mining) has not been tested.
+      </li>
+      <li>
+        <strong>Image-based CNN/GAN pipeline not implemented.</strong> A parallel deep
+        learning track (CLAHE contrast normalization &rarr; GAN-based augmentation &rarr;
+        CNN/U-Net segmentation) was scoped but deferred: it requires a labeled image-patch
+        dataset that does not yet exist for this AOI, and [3]'s finding that larger models
+        do not resolve the specific spectral-confusion failure mode observed here reduces its
+        expected marginal value relative to the effort required.
+      </li>
+    </ol>
+  </section>
+
+  <section id="future-work">
+    <h2><span class="num">8</span> Future Work</h2>
+    <ul>
+      <li>Recruit additional labelers on the existing 40-chip hard-case set to establish inter-rater reliability before treating validation metrics as conclusive.</li>
+      <li>Adopt QC-SMOTE [5] in place of standard SMOTE, targeting the noisy-boundary region around the ambiguous-vegetation confusion identified in Section 6.3.</li>
+      <li>Extend the pilot to a second AOI with a structurally different mining signature (e.g. hard-rock/quarry mining) to test generalization.</li>
+      <li>Acquire finer-grained illegal-mining ground truth (RAISG's own illegal-mining layer was too coarse for this AOI &mdash; a single hand-drawn 2016 regional outline, not per-pixel footprints) to validate O4's illegal-classification independently of the concession-based proxy.</li>
+      <li>Phase 2, contingent on labeled image data becoming available: CLAHE-normalized, GAN-augmented CNN segmentation as a direct upgrade path for O2, using the same feature-stack/probability-map interface so O3&ndash;O5 require no changes.</li>
+    </ul>
+  </section>
+
+  <section id="references">
+    <h2><span class="num">9</span> References</h2>
+    <ol class="refs">
+      <li>
+        <span class="ref-num mono">[1]</span>
+        <span>
+          Zheng, Z., Yang, J., Lv, G., Li, Q., &amp; Wang, Y. (2026). Global&ndash;Local Feature
+          Fusion Network for Remote Sensing Image Change Detection in Open-Pit Mining Areas.
+          <em>Sensors</em>, 26(10). <a href="https://doi.org/10.3390/s26103128">https://doi.org/10.3390/s26103128</a>
+        </span>
+      </li>
+      <li>
+        <span class="ref-num mono">[2]</span>
+        <span>
+          Cui, K., Bohara, S., Prasai, S., Shao, Z., Tang, W., Pillaca, M., Flores, E., Yang,
+          Z., Larsen, G., Dethier, E., Lutz, D., Morel, J.-M., Silman, M., Pauca, V., &amp;
+          Yang, F. (2026). ELDOR: A Dataset and Benchmark for Illegal Gold Mining in the
+          Amazon Rainforest. <em>arXiv preprint</em> arXiv:2605.15397.
+          <a href="https://arxiv.org/abs/2605.15397">https://arxiv.org/abs/2605.15397</a>
+        </span>
+      </li>
+      <li>
+        <span class="ref-num mono">[3]</span>
+        <span>
+          Rehman, A. U., &amp; Donovan, J. M. (2026). When Less Is More: A Controlled
+          Benchmark of Lightweight CNNs for Satellite Land-Cover Segmentation on DeepGlobe.
+          <em>arXiv preprint</em> arXiv:2607.23024.
+          <a href="https://arxiv.org/abs/2607.23024">https://arxiv.org/abs/2607.23024</a>
+        </span>
+      </li>
+      <li>
+        <span class="ref-num mono">[4]</span>
+        <span>
+          Amazon Conservation Association (2026, April 24). AI Tool Tracks Spread of Illegal
+          Gold Mining in Amazon Protected Areas. <em>Mongabay</em>.
+          <a href="https://news.mongabay.com/2026/04/ai-tool-tracks-spread-of-illegal-gold-mining-in-amazon-protected-areas/">
+            https://news.mongabay.com/2026/04/ai-tool-tracks-spread-of-illegal-gold-mining-in-amazon-protected-areas/
+          </a>
+        </span>
+      </li>
+      <li>
+        <span class="ref-num mono">[5]</span>
+        <span>
+          Upman, P., &amp; Gowda, S. N. (2026). QC-SMOTE: Quality-Controlled SMOTE for
+          Imbalanced Classification. <em>arXiv preprint</em> arXiv:2606.24625.
+          <a href="https://arxiv.org/abs/2606.24625">https://arxiv.org/abs/2606.24625</a>
+        </span>
+      </li>
+    </ol>
+  </section>
+
+  <hr class="section-divider">
+  <footer class="doc-footer">
+    Prototype implementation, source code, test suite, and the ambiguous-case labeling tool
+    referenced throughout this document are maintained at the project repository
+    (<code>github.com/pracooljain/illegal-mining-detector</code>).
+  </footer>
+</div>
