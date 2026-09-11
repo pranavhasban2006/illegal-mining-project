@@ -85,24 +85,33 @@ def run(out_dir: str = "outputs"):
     print(f"[O3] New-disturbance pixels: {int(new_mask.sum())} "
           f"(~{new_mask.sum() * 100 / 10_000:.1f} ha)")
 
-    print("[O4] Cross-referencing against active RAISG concessions...")
+    print("[O4] Classifying legal status against RAISG concessions "
+          "(legal / disputed / illegal)...")
     active = real_labels.active_concessions(concessions)
-    licensed_mask = licensing.rasterize_leases(active, new_mask.shape, aoi_transform, crs)
-    suspicious_mask = licensing.suspicious_area_mask(new_mask, licensed_mask)
-    confidence_map = licensing.suspicious_confidence(suspicious_mask, proba_t1, change_conf)
-    print(f"[O4] Suspicious pixels: {int(suspicious_mask.sum())} "
-          f"(~{suspicious_mask.sum() * 100 / 10_000:.1f} ha)")
+    active_mask = licensing.rasterize_leases(active, new_mask.shape, aoi_transform, crs)
+    any_concession_mask = licensing.rasterize_leases(concessions, new_mask.shape, aoi_transform, crs)
+    legal_status = licensing.classify_legal_status(new_mask, active_mask, any_concession_mask)
+    confidence_map = licensing.status_confidence(legal_status, proba_t1, change_conf)
 
-    print("[O5] Exporting alerts...")
-    alert_gdf = alerts.vectorize_alerts(
-        suspicious_mask, confidence_map, aoi_transform, crs,
+    from .licensing import LegalStatus
+    n_legal = int((legal_status == LegalStatus.LEGAL).sum())
+    n_disputed = int((legal_status == LegalStatus.DISPUTED).sum())
+    n_illegal = int((legal_status == LegalStatus.ILLEGAL).sum())
+    print(f"[O4] New-disturbance breakdown: legal={n_legal}px (~{n_legal/100:.1f}ha), "
+          f"disputed={n_disputed}px (~{n_disputed/100:.1f}ha), "
+          f"illegal={n_illegal}px (~{n_illegal/100:.1f}ha)")
+
+    print("[O5] Exporting alerts (disputed + illegal only; legal excluded)...")
+    alert_gdf = alerts.vectorize_status_alerts(
+        legal_status, confidence_map, aoi_transform, crs,
         observation_date=config.DEFAULT_DATE_T1, min_area_m2=2000.0,
     )
     out_path = os.path.join(out_dir, "real_alerts.geojson")
     alerts.write_geojson(alert_gdf, out_path)
     print(f"[O5] Wrote {len(alert_gdf)} alert(s) to {out_path}")
     if len(alert_gdf):
-        print(alert_gdf[["alert_id", "confidence", "area_ha"]].head(10).to_string(index=False))
+        print(alert_gdf["legal_status"].value_counts().to_string())
+        print(alert_gdf[["alert_id", "legal_status", "confidence", "area_ha"]].head(10).to_string(index=False))
 
     return alert_gdf
 

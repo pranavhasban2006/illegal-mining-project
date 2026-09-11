@@ -1,8 +1,14 @@
 """Orchestrates O1-O5 end-to-end.
 
 Two entry points:
-  - run_demo(): fully synthetic, no CDSE credentials required. Use this now.
-  - run_live(): real Sentinel-2 scenes via CDSE. Wire up once credentials exist.
+  - run_demo(): fully synthetic, no CDSE credentials required. Good for
+    demoing the architecture without any setup.
+  - run_live(): the real pipeline against Sentinel-2 imagery over the Peru
+    pilot AOI (see config.py). Delegates to real_run.py, which implements
+    the full flow: CDSE download, real RAISG-concession-based labels
+    (real_labels.py) corrected with hand-labeled hard cases
+    (hard_case_labels.py), bi-temporal change detection, and 3-tier
+    legal/disputed/illegal classification (licensing.py).
 """
 
 from __future__ import annotations
@@ -82,28 +88,19 @@ def _pre_existing_mask():
     return m
 
 
-def run_live(bbox, date_t0, date_t1, lease_path: str, out_dir: str = "outputs"):
-    """Real CDSE pipeline. Requires CDSE_USERNAME / CDSE_PASSWORD env vars."""
-    from . import auth, search, download, preprocess
+def run_live(out_dir: str = "outputs"):
+    """Real Sentinel-2 pipeline over the Peru pilot AOI. Requires:
+      - CDSE_USERNAME/CDSE_PASSWORD or CDSE_S3_ACCESS_KEY/CDSE_S3_SECRET_KEY
+        in .env (see README) -- only needed if data/raw/ scenes aren't
+        already downloaded (download.py caches to disk).
+      - data/leases/madre_de_dios_concessions.geojson (RAISG concessions,
+        see README for how this was obtained).
 
-    session = auth.CDSESession()
-
-    items_t0 = search.search_scenes(bbox, date_t0, date_t0)
-    items_t1 = search.search_scenes(bbox, date_t1, date_t1)
-    if not items_t0 or not items_t1:
-        raise RuntimeError("No suitable low-cloud scenes found for one of the dates.")
-
-    paths_t0 = download.download_bands(items_t0[0], session, "data/raw/t0")
-    paths_t1 = download.download_bands(items_t1[0], session, "data/raw/t1")
-
-    bands_t0, transform, crs = preprocess.load_band_stack(paths_t0)
-    bands_t1, _, _ = preprocess.load_band_stack(paths_t1)
-
-    raise NotImplementedError(
-        "Live pipeline needs labeled training pixels for this AOI before "
-        "detection.MiningDetector.fit() can run -- plug in a labeled mask "
-        "(manual annotation or an open mining-footprint dataset) here."
-    )
+    See real_run.py for the full implementation; this is a thin wrapper so
+    `pipeline` stays the single entry-point module for both demo and live runs.
+    """
+    from . import real_run
+    return real_run.run(out_dir=out_dir)
 
 
 if __name__ == "__main__":

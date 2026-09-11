@@ -6,12 +6,14 @@ Maps to project objectives O1-O5:
 | Stage | Objective | Module |
 |---|---|---|
 | O1 | Data acquisition (CDSE Sentinel-2 L2A) | `auth.py`, `search.py`, `download.py`, `preprocess.py` |
-| O2 | Mining-area detection (spectral features + RF classifier) | `indices.py`, `detection.py` |
+| O2 | Mining-area detection (spectral features + multi-algorithm classifier) | `indices.py`, `detection.py`, `model_selection.py`, `real_labels.py`, `hard_case_labels.py` |
 | O3 | Bi-temporal change detection | `change_detection.py` |
-| O4 | Licensed vs. unlicensed footprint discrimination | `licensing.py` |
+| O4 | Legal / disputed / illegal footprint classification | `licensing.py` |
 | O5 | Geo-referenced alert export (GeoJSON) | `alerts.py` |
 
-`pipeline.py` orchestrates all five stages.
+`pipeline.py` is the single entry point for both modes:
+- `pipeline.run_demo()` -- synthetic data, no credentials needed.
+- `pipeline.run_live()` -- the real pipeline over the Peru pilot AOI (delegates to `real_run.py`).
 
 ## Known limitations (real-data run, Madre de Dios pilot)
 
@@ -139,17 +141,46 @@ and `area_ha` per suspicious site.
 
 ## Run against real Sentinel-2 data
 
-1. Register for free at https://dataspace.copernicus.eu
-2. Set credentials:
-   ```powershell
-   $env:CDSE_USERNAME="you@example.com"
-   $env:CDSE_PASSWORD="..."
+Already working end-to-end for the Peru pilot AOI (Madre de Dios / La Pampa,
+`config.py`):
+
+1. Register for free at https://dataspace.copernicus.eu, then create an S3
+   key pair at https://eodata-s3keysmanager.dataspace.copernicus.eu
+   (band downloads use direct S3 access -- see "Why S3, not the OData
+   product download?" below).
+2. Copy `.env.example` to `.env` and fill in:
    ```
-3. Call `pipeline.run_live(bbox, date_t0, date_t1, lease_path)` for your pilot
-   AOI. **Note:** the classifier in `detection.py` needs labeled training
-   pixels for the real AOI before `run_live` can train it — this is currently
-   a `NotImplementedError` stub pending either manual annotation of a few
-   known mining/non-mining patches, or an open mining-footprint dataset.
+   CDSE_USERNAME=you@example.com
+   CDSE_PASSWORD=...
+   CDSE_S3_ACCESS_KEY=...
+   CDSE_S3_SECRET_KEY=...
+   ```
+3. Download t0/t1 scenes for your AOI/dates (see `search.py` + `download.py`,
+   or reuse the two scenes already cached under `data/raw/` for this pilot).
+4. Run:
+   ```powershell
+   $env:PYTHONPATH="src"
+   .\.venv\Scripts\python.exe -m mining_detector.real_run
+   ```
+   (equivalently `pipeline.run_live()`). Output: `outputs/real_alerts.geojson`,
+   each polygon tagged `legal_status` (`disputed` or `illegal`), `confidence`,
+   and `area_ha`.
+
+To point this at a different AOI: update `config.PILOT_AOI_BBOX` and the
+date constants, get a concessions/lease extract for that region in the same
+shape as `data/leases/madre_de_dios_concessions.geojson` (a `situacion`
+column distinguishing active from inactive statuses is optional but
+improves O4's legal/disputed/illegal split -- see `real_labels.py`), and
+either build a new `data/hard_cases/` labeled set for that AOI or skip that
+step (`real_run.py` folds it in only when present).
+
+### Why S3, not the OData product download?
+
+CDSE's OData `$value` endpoint downloads the entire SAFE product archive
+(800MB-1GB) and repeatedly truncated mid-stream in testing (`download.py`
+still has a retry/resume-capable `download_product_zip` as a documented
+fallback). Direct S3 access to the `eodata` bucket only pulls the ~6 bands
+this project needs (tens of MB total) and was reliable in testing.
 
 ## Faculty ML-methodology mapping
 
