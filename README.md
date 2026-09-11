@@ -91,9 +91,30 @@ data over La Pampa, Peru, both fixed but worth documenting for the review:
    fallow land/agriculture/regrowth gets over-flagged as mining). Both point
    to the same cause already seen in the O3 seasonal-confound fix: the
    composite disturbance score leans too heavily on NDVI/NDMI (phenology-
-   sensitive) relative to mining-specific BSI/SWIR signal. Concrete next
-   step: re-weight `indices.py`'s composite score toward BSI/SWIR and
-   re-validate against this same 40-chip set.
+   sensitive) relative to mining-specific BSI/SWIR signal.
+
+5. **Hard-case validation -- fixed via hard_case_labels.py.** Confirmed the
+   cause directly: the trained model's own feature importances rank NDVI
+   (0.345) and NDWI (0.268) above BSI (0.192) and NDMI (0.098) -- the
+   phenology-sensitive features dominate the mining-specific one, exactly
+   as the accuracy pattern implied. Rather than hand-tuning a composite
+   formula, the fix folds the real hand labels back into training directly
+   (`hard_case_labels.py`): human labels for a small neighborhood (9x9px)
+   around each hard-case chip's center override whatever concession-based
+   label was there. Evaluated honestly with a stratified 50/50 split of the
+   32 labeled chips (16 folded into training, 16 held out, never mixed --
+   `data/hard_cases/run_augmented_eval.py`): F1 on the held-out 16 went
+   **0.833 -> 0.909** (precision 0.714 -> 0.833, recall held at a perfect
+   1.000, false positives 4 -> 2). `real_run.py` now folds in all 32 labeled
+   hard cases for the deployed model (`data/hard_cases/votes.json` +
+   `chips_data.json`), since the held-out evaluation already validated the
+   approach -- standard practice: measure improvement on a genuine holdout,
+   then retrain on the full labeled set for deployment.
+
+   Sample size caveat still applies (32 chips, single labeler) -- next step
+   for statistical confidence is more labelers on the same 40-chip set via
+   the shared tool (votes are keyed per-labeler, so this needs no code
+   changes, just more people using the link).
 
 ## Setup
 

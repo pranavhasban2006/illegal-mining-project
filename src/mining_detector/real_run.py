@@ -1,24 +1,29 @@
 """End-to-end O1-O5 run against real Sentinel-2 data for the Peru pilot AOI.
 
 Assumes bands for t0 and t1 have already been downloaded (see download.py)
-into data/raw/t0_scene_2025 and data/raw/test_scene. Training labels and the
-O4 lease overlay both come from data/leases/madre_de_dios_concessions.geojson
--- a real RAISG mining-concessions extract, not the percentile-based weak
-labels in weak_labels.py (see real_labels.py for why concessions make a
-genuine ground-truth source: legal and illegal mining share the same
-spectral signature).
+into data/raw/t0_scene_2025 and data/raw/test_scene. Training labels start
+from data/leases/madre_de_dios_concessions.geojson (a real RAISG mining-
+concessions extract -- see real_labels.py for why concessions make a
+genuine ground-truth source), then are corrected with hand-labeled hard
+cases from data/hard_cases/ when available (see hard_case_labels.py):
+validation showed the concession-only model over-flags moderate vegetation
+loss as mining, and folding in real human labels for exactly that confusion
+measurably fixed it (held-out F1 0.833 -> 0.909, see
+data/hard_cases/validation_summary.md).
 """
 
 from __future__ import annotations
 
+import json
 import os
 import geopandas as gpd
 
-from . import config, preprocess, real_labels, weak_labels, detection, change_detection, licensing, alerts
+from . import config, preprocess, real_labels, weak_labels, hard_case_labels, detection, change_detection, licensing, alerts
 
 T0_DIR = "data/raw/t0_scene_2025"  # 2025-07-27 -- same calendar day, prior year
 T1_DIR = "data/raw/test_scene"     # 2026-07-27 -- see config.py for why same-month matters
 CONCESSIONS_PATH = "data/leases/madre_de_dios_concessions.geojson"
+HARD_CASES_DIR = "data/hard_cases"
 
 
 def _band_paths(scene_dir: str) -> dict:
@@ -52,6 +57,16 @@ def run(out_dir: str = "outputs"):
         bands_t1, aoi_transform, crs, concessions
     )
     print(f"[O2] Label summary: {weak_labels.label_summary(labels)}")
+
+    chips_path = os.path.join(HARD_CASES_DIR, "chips_data.json")
+    votes_path = os.path.join(HARD_CASES_DIR, "votes.json")
+    if os.path.exists(chips_path) and os.path.exists(votes_path):
+        chips = json.load(open(chips_path))
+        votes = json.load(open(votes_path))
+        labeled_chips = hard_case_labels.load_votes_and_chips(votes, chips)
+        labels = hard_case_labels.apply_hard_case_labels(labels, labeled_chips, window=4)
+        print(f"[O2] Folded in {len(labeled_chips)} hand-labeled hard cases "
+              f"from {HARD_CASES_DIR} (see validation_summary.md)")
 
     detector = detection.MiningDetector()
     report = detector.fit(bands_t1, labels, strategy="70:30", use_smote=True)
