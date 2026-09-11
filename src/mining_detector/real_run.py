@@ -1,22 +1,24 @@
 """End-to-end O1-O5 run against real Sentinel-2 data for the Peru pilot AOI.
 
 Assumes bands for t0 and t1 have already been downloaded (see download.py)
-into data/raw/t0_scene and data/raw/t1_scene. No lease-boundary data exists
-publicly for this AOI yet, so licensing.py runs with an empty lease set --
-every detected new-disturbance polygon is flagged suspicious pending real
-lease data (see README for how to plug that in).
+into data/raw/t0_scene_2025 and data/raw/test_scene. Training labels and the
+O4 lease overlay both come from data/leases/madre_de_dios_concessions.geojson
+-- a real RAISG mining-concessions extract, not the percentile-based weak
+labels in weak_labels.py (see real_labels.py for why concessions make a
+genuine ground-truth source: legal and illegal mining share the same
+spectral signature).
 """
 
 from __future__ import annotations
 
 import os
-import numpy as np
 import geopandas as gpd
 
-from . import config, preprocess, weak_labels, detection, change_detection, licensing, alerts
+from . import config, preprocess, real_labels, weak_labels, detection, change_detection, licensing, alerts
 
 T0_DIR = "data/raw/t0_scene_2025"  # 2025-07-27 -- same calendar day, prior year
 T1_DIR = "data/raw/test_scene"     # 2026-07-27 -- see config.py for why same-month matters
+CONCESSIONS_PATH = "data/leases/madre_de_dios_concessions.geojson"
 
 
 def _band_paths(scene_dir: str) -> dict:
@@ -41,8 +43,14 @@ def run(out_dir: str = "outputs"):
     bands_t1, _ = preprocess.crop_to_bbox(bands_t1_full, transform, crs, config.PILOT_AOI_BBOX)
     print(f"[O1] AOI shape: {bands_t1.shape}")
 
-    print("[O2] Generating weak labels from t1 (see weak_labels.py)...")
-    labels = weak_labels.generate_weak_labels(bands_t1)
+    concessions = gpd.read_file(CONCESSIONS_PATH)
+    print(f"[O1] Loaded {len(concessions)} RAISG mining concessions "
+          f"({len(real_labels.active_concessions(concessions))} active/titled)")
+
+    print("[O2] Generating real labels from RAISG concessions (see real_labels.py)...")
+    labels = real_labels.generate_labels_from_concessions(
+        bands_t1, aoi_transform, crs, concessions
+    )
     print(f"[O2] Label summary: {weak_labels.label_summary(labels)}")
 
     detector = detection.MiningDetector()
@@ -62,12 +70,13 @@ def run(out_dir: str = "outputs"):
     print(f"[O3] New-disturbance pixels: {int(new_mask.sum())} "
           f"(~{new_mask.sum() * 100 / 10_000:.1f} ha)")
 
-    print("[O4] Cross-referencing against licensed leases (none available for this AOI yet)...")
-    empty_leases = gpd.GeoDataFrame(geometry=[], crs=crs)
-    licensed_mask = licensing.rasterize_leases(empty_leases, new_mask.shape, aoi_transform, crs)
+    print("[O4] Cross-referencing against active RAISG concessions...")
+    active = real_labels.active_concessions(concessions)
+    licensed_mask = licensing.rasterize_leases(active, new_mask.shape, aoi_transform, crs)
     suspicious_mask = licensing.suspicious_area_mask(new_mask, licensed_mask)
     confidence_map = licensing.suspicious_confidence(suspicious_mask, proba_t1, change_conf)
-    print(f"[O4] Suspicious pixels: {int(suspicious_mask.sum())}")
+    print(f"[O4] Suspicious pixels: {int(suspicious_mask.sum())} "
+          f"(~{suspicious_mask.sum() * 100 / 10_000:.1f} ha)")
 
     print("[O5] Exporting alerts...")
     alert_gdf = alerts.vectorize_alerts(

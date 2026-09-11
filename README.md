@@ -41,19 +41,38 @@ data over La Pampa, Peru, both fixed but worth documenting for the review:
    documents historical losses of low-thousands of ha/year at La Pampa) but
    likely still somewhat overestimated.
 
-3. **Weak-label ceiling (open, not fixed).** `weak_labels.py` bootstraps
-   training labels from percentile thresholds on the *same* spectral
-   features the classifier then trains on, so every algorithm scores a
-   suspiciously perfect f1=1.000 in `model_selection.py`'s comparison --
-   this reflects the classifier re-deriving its own label-generation rule,
-   not validated real-world accuracy. The classifier also generalizes
-   aggressively beyond the labeled extremes (~40% of the full scene gets
-   classified "mining" at the default 0.5 threshold, versus only the top
-   ~2% used to generate positive labels). Real hand-labeled or
-   open-dataset ground truth (see main labeling-approach discussion) is
-   needed before absolute area/confidence figures from this pipeline
-   should be reported as validated results rather than a working
-   prototype demonstration.
+3. **Weak-label ceiling -- fixed via real_labels.py.** `weak_labels.py`
+   originally bootstrapped training labels from percentile thresholds on
+   the *same* spectral features the classifier then trained on, so every
+   algorithm scored a self-referential f1=1.000: the classifier was just
+   re-deriving its own label-generation rule, not demonstrating real-world
+   accuracy. Fixed by sourcing real ground truth externally instead:
+   `real_labels.py` uses RAISG's mining-concessions dataset (government-
+   sourced polygon boundaries, downloaded from raisg.org, clipped to this
+   AOI in `data/leases/madre_de_dios_concessions.geojson`). Legal and
+   illegal mining share the same excavated-bare-soil spectral signature --
+   only the administrative status differs -- so active/titled concession
+   interiors are a genuine positive-label source, and pixels >300m from
+   any concession (active or not) with high NDVI are a genuine negative
+   source. The RAISG "illegal mining" layer itself turned out too coarse
+   to use directly (a single hand-drawn 2016 zone outline covering the
+   whole region, ~240km x 140km, not per-pixel footprints).
+
+   This also tightened the results substantially: "new disturbance" fell
+   from ~8,500 ha/year (weak labels) to **~1,800 ha/year** (real labels),
+   with alert polygons now typically 0.2-0.3 ha -- consistent with La
+   Pampa's known pattern of fragmented small-scale artisanal mining sites,
+   rather than the weak-label version's more diffuse over-classification.
+   Algorithm f1 scores are still very high (0.997-1.000,
+   `model_selection.py`'s comparison), but this is now a meaningfully
+   different claim than before: the training task itself (obvious bare
+   excavation vs. obvious dense forest) is genuinely easy to separate
+   spectrally, so near-perfect accuracy on it is expected -- it does NOT
+   mean the pipeline is 99.7% accurate on the actually-hard cases
+   (ambiguous partially-cleared land, fallow, non-mining bare ground),
+   which are deliberately excluded from training as unlabeled. Validating
+   against those hard cases would need hand-labeled examples specifically
+   targeting them.
 
 ## Setup
 

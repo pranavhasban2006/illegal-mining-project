@@ -3,5 +3,6 @@ __pycache__/
 *.pyc
 data/raw/
 data/processed/
+data/external/
 outputs/
 .env
