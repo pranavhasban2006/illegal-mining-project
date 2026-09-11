@@ -12,6 +12,7 @@ for the feature stack this consumes.
 from __future__ import annotations
 
 import numpy as np
+from sklearn.preprocessing import StandardScaler
 
 from . import indices, model_selection
 
@@ -47,14 +48,26 @@ class MiningDetector:
         self._fitted = True
         return report
 
-    def predict_proba_map(self, bands: np.ndarray) -> np.ndarray:
-        """Returns (H,W) probability of mining-disturbed land."""
+    def predict_proba_map(self, bands: np.ndarray, normalize_per_scene: bool = True) -> np.ndarray:
+        """Returns (H,W) probability of mining-disturbed land.
+
+        normalize_per_scene: re-fit the feature scaler on THIS scene's own
+        statistics rather than reusing the training scene's scaler. This
+        matters for bi-temporal comparison -- two Sentinel-2 scenes from
+        different dates differ in atmosphere/sun-angle/season on top of any
+        real land-cover change, so applying one scene's absolute scaling to
+        another's raw reflectance miscalibrates the classifier and creates
+        spurious "change" across nearly the whole image (see README). Each
+        scene normalized against itself keeps the classifier looking at
+        relative spectral position, which is far more comparable across dates.
+        """
         if not self._fitted:
             raise RuntimeError("Call fit() before predicting.")
         feats = indices.compute_feature_stack(bands)
         n_feat, h, w = feats.shape
         X = feats.reshape(n_feat, -1).T
-        X = self.scaler.transform(X)
+        scaler = StandardScaler().fit(X) if normalize_per_scene else self.scaler
+        X = scaler.transform(X)
         proba = self.model.predict_proba(X)[:, 1]
         return proba.reshape(h, w)
 

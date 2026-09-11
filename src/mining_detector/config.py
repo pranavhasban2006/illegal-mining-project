@@ -11,9 +11,14 @@ PILOT_AOI_BBOX = (-70.05, -13.05, -69.75, -12.80)
 
 PILOT_NAME = "madre_de_dios_la_pampa"
 
-# Wet/dry season affects cloud cover heavily in the Amazon -- prefer dates in
-# the Jun-Sep dry season for usable low-cloud scenes.
-DEFAULT_DATE_T0 = "2026-06-01"
-DEFAULT_DATE_T1 = "2026-08-01"
+# Year-over-year, SAME calendar month, not two dates within one dry-season
+# progression: comparing June vs August within a single year confounds real
+# land-cover change with seasonal vegetation-stress phenology (verified on
+# this AOI -- scene-wide NDVI dropped 0.48->0.32 and NDMI 0.19->0.12 between
+# those dates with no plausible mining-driven cause). Matching month-of-year
+# keeps sun angle/season/vegetation phenology comparable across t0/t1, so a
+# large reflectance shift is far more likely to reflect genuine change.
+DEFAULT_DATE_T0 = "2025-07-27"
+DEFAULT_DATE_T1 = "2026-07-27"
 
 MAX_CLOUD_COVER = 30.0

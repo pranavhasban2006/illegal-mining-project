@@ -15,8 +15,8 @@ import geopandas as gpd
 
 from . import config, preprocess, weak_labels, detection, change_detection, licensing, alerts
 
-T0_DIR = "data/raw/t0_scene"
-T1_DIR = "data/raw/test_scene"  # first real scene we downloaded (2026-07-27)
+T0_DIR = "data/raw/t0_scene_2025"  # 2025-07-27 -- same calendar day, prior year
+T1_DIR = "data/raw/test_scene"     # 2026-07-27 -- see config.py for why same-month matters
 
 
 def _band_paths(scene_dir: str) -> dict:

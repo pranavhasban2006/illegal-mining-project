@@ -13,6 +13,48 @@ Maps to project objectives O1-O5:
 
 `pipeline.py` orchestrates all five stages.
 
+## Known limitations (real-data run, Madre de Dios pilot)
+
+Two methodological issues surfaced running O1-O5 against real Sentinel-2
+data over La Pampa, Peru, both fixed but worth documenting for the review:
+
+1. **Cross-date scaling.** Two Sentinel-2 scenes from different dates differ
+   in atmosphere/sun-angle beyond any real land-cover change. Applying one
+   date's fitted feature scaler to another date's raw reflectance
+   miscalibrates the classifier. Fix: `detection.py`'s `predict_proba_map`
+   re-fits a fresh `StandardScaler` on each scene's own statistics
+   (`normalize_per_scene=True`), so both dates are compared in relative
+   terms rather than one date's absolute scale.
+
+2. **Seasonal phenology confound.** Initially compared June 2026 vs. August
+   2026 (two dates within the same Amazon dry-season progression). Verified
+   directly: scene-wide NDVI dropped 0.48->0.32 and NDMI 0.19->0.12 across
+   the *entire* AOI between those dates, with no plausible mining-driven
+   cause -- vegetation naturally dries out through the dry season,
+   mimicking a bare-soil signature at scale. This alone inflated "new
+   disturbance" to an implausible ~18,000-28,000 ha in two months. Fix:
+   compare the **same calendar date one year apart** instead
+   (`config.py`: `2025-07-27` vs `2026-07-27`), which matches sun
+   angle/season/phenology so a remaining reflectance shift is far more
+   likely to reflect genuine change. This reduced the detected area to
+   ~8,500 ha/year -- still plausible for this specific hotspot (MAAP
+   documents historical losses of low-thousands of ha/year at La Pampa) but
+   likely still somewhat overestimated.
+
+3. **Weak-label ceiling (open, not fixed).** `weak_labels.py` bootstraps
+   training labels from percentile thresholds on the *same* spectral
+   features the classifier then trains on, so every algorithm scores a
+   suspiciously perfect f1=1.000 in `model_selection.py`'s comparison --
+   this reflects the classifier re-deriving its own label-generation rule,
+   not validated real-world accuracy. The classifier also generalizes
+   aggressively beyond the labeled extremes (~40% of the full scene gets
+   classified "mining" at the default 0.5 threshold, versus only the top
+   ~2% used to generate positive labels). Real hand-labeled or
+   open-dataset ground truth (see main labeling-approach discussion) is
+   needed before absolute area/confidence figures from this pipeline
+   should be reported as validated results rather than a working
+   prototype demonstration.
+
 ## Setup
 
 ```powershell

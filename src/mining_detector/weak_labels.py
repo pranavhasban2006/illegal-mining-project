@@ -20,10 +20,25 @@ NOT_MINING = 0
 MINING = 1
 
 
+def _raw_disturbance_score(bands: np.ndarray) -> np.ndarray:
+    """Unclipped version of indices.mining_disturbance_index.
+
+    Percentile-based thresholding needs the raw, unclipped score: the
+    clipped version saturates at +-1 for extreme pixels, which on a heavily
+    disturbed scene (e.g. La Pampa) can tie 30%+ of pixels at the same
+    capped value and silently break percentile selection (a threshold meant
+    to select the top 2% ends up selecting every tied pixel instead).
+    """
+    veg = indices.ndvi(bands)
+    moist = indices.ndmi(bands)
+    bare = indices.bsi(bands)
+    return bare - 0.5 * veg - 0.3 * moist
+
+
 def generate_weak_labels(
     bands: np.ndarray,
-    positive_percentile: float = 95.0,
-    negative_percentile: float = 90.0,
+    positive_percentile: float = 98.0,
+    negative_percentile: float = 95.0,
 ) -> np.ndarray:
     """Returns (H,W) int8 array: 1=confident mining, 0=confident not-mining,
     -1=unlabeled (excluded from training -- ambiguous pixels).
@@ -33,7 +48,7 @@ def generate_weak_labels(
     Negative: top `negative_percentile` of NDVI (confidently dense vegetation)
     among pixels the disturbance index rates as NOT disturbed.
     """
-    mdi = indices.mining_disturbance_index(bands)
+    mdi = _raw_disturbance_score(bands)
     ndvi = indices.ndvi(bands)
 
     labels = np.full(mdi.shape, UNLABELED, dtype=np.int8)
