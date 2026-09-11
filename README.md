@@ -125,6 +125,19 @@ py -3.11 -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
 ```
 
+## Testing
+
+```powershell
+$env:PYTHONPATH="src"
+.\.venv\Scripts\python.exe -m pytest tests/ -v
+```
+
+44 tests covering every deterministic module (`indices.py`,
+`change_detection.py`, `licensing.py`, `alerts.py`, `hard_case_labels.py`,
+`model_selection.py`, `preprocess.py`, `weak_labels.py`, `real_labels.py`)
+against synthetic data with known-correct answers -- no CDSE credentials or
+downloaded imagery required.
+
 ## Run the demo (no credentials needed)
 
 Runs the full O1-O5 pipeline on a synthetic bi-temporal scene (one pre-existing
