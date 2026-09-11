@@ -1,0 +1,8 @@
+{
+"type": "FeatureCollection",
+"name": "demo_leases",
+"crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:EPSG::32633" } },
+"features": [
+{ "type": "Feature", "properties": { "lease_id": "LIC-001", "holder": "Demo Mining Co." }, "geometry": { "type": "Polygon", "coordinates": [ [ [ 500800.0, 8999200.0 ], [ 500800.0, 8999800.0 ], [ 500200.0, 8999800.0 ], [ 500200.0, 8999200.0 ], [ 500800.0, 8999200.0 ] ] ] } }
+]
+}

@@ -1,0 +1,104 @@
+# Illegal Mining Detector
+
+Sentinel-2-driven pipeline for detecting illegal/unregulated surface mining.
+Maps to project objectives O1-O5:
+
+| Stage | Objective | Module |
+|---|---|---|
+| O1 | Data acquisition (CDSE Sentinel-2 L2A) | `auth.py`, `search.py`, `download.py`, `preprocess.py` |
+| O2 | Mining-area detection (spectral features + RF classifier) | `indices.py`, `detection.py` |
+| O3 | Bi-temporal change detection | `change_detection.py` |
+| O4 | Licensed vs. unlicensed footprint discrimination | `licensing.py` |
+| O5 | Geo-referenced alert export (GeoJSON) | `alerts.py` |
+
+`pipeline.py` orchestrates all five stages.
+
+## Setup
+
+```powershell
+py -3.11 -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+```
+
+## Run the demo (no credentials needed)
+
+Runs the full O1-O5 pipeline on a synthetic bi-temporal scene (one pre-existing
+licensed mine, two new unlicensed excavation sites) so the architecture can be
+demoed/validated before real Sentinel-2 data is wired in.
+
+```powershell
+$env:PYTHONPATH="src"
+.\.venv\Scripts\python.exe -m mining_detector.pipeline
+```
+
+Output: `outputs/alerts.geojson` — geo-referenced polygons with `confidence`
+and `area_ha` per suspicious site.
+
+## Run against real Sentinel-2 data
+
+1. Register for free at https://dataspace.copernicus.eu
+2. Set credentials:
+   ```powershell
+   $env:CDSE_USERNAME="you@example.com"
+   $env:CDSE_PASSWORD="..."
+   ```
+3. Call `pipeline.run_live(bbox, date_t0, date_t1, lease_path)` for your pilot
+   AOI. **Note:** the classifier in `detection.py` needs labeled training
+   pixels for the real AOI before `run_live` can train it — this is currently
+   a `NotImplementedError` stub pending either manual annotation of a few
+   known mining/non-mining patches, or an open mining-footprint dataset.
+
+## Faculty ML-methodology mapping
+
+Two generic workflows were specified for the review: a tabular/CSV pipeline
+(load -> preprocess -> split -> SMOTE -> train multiple algorithms -> check
+overfit/underfit -> test -> select best model) and an image-file pipeline
+(load -> preprocess -> CLAHE -> GAN augmentation -> split -> train -> test
+-> select best model).
+
+**CSV pipeline -> fully implemented, `model_selection.py`.** O2's per-pixel
+spectral-feature table (NDVI/NDMI/BSI/NDWI + raw bands per pixel) *is* the
+"CSV file" of that flowchart, just built in memory instead of read from
+disk. Implemented exactly per the diagram:
+- **Data split**: holdout (80:20 / 70:30 / 60:40, `run_holdout`) or
+  stratified 10-fold CV (`run_cross_validation`), selectable via
+  `MiningDetector.fit(..., cv_folds=10)`.
+- **SMOTE**: applied to the training portion only (post-split / per-fold),
+  since mining pixels are a minority class against background land cover.
+- **Multiple algorithms**: Logistic Regression (L1 and L2), Random Forest,
+  SVM (RBF kernel), Gradient Boosting -- trained and compared every run.
+- **Overfitting/underfitting check + regularization**: train-vs-test F1 gap
+  is computed per model and flagged past a threshold (`OVERFIT_GAP_THRESHOLD`
+  in `model_selection.py`); L1/L2 penalty strength (`C`) covers the
+  regularization axis for the linear models, and Gradient Boosting uses
+  early stopping (`n_iter_no_change`) as its regularizer.
+- **Selection of the best model**: highest test-set F1 across all
+  candidates is auto-selected and used for O3-O5.
+
+**Image/GAN pipeline -> planned future work, not implemented.** This track
+(CLAHE contrast enhancement on raw tiles, then GAN/StyleGAN/CGAN-based
+synthetic augmentation, then training a CNN/segmentation model) requires a
+labeled image-patch dataset for illegal mining that does not yet exist for
+this AOI. Building it (even via weak/self-supervised labels) and training a
+GAN well is a multi-week effort on its own, which is why O2 currently ships
+the spectral-classifier path above instead. Phase 2 plan: once ~50-100
+hand-labeled or open-dataset mining/non-mining image patches exist for
+Madre de Dios, apply CLAHE to normalize atmospheric haze common in Amazon
+scenes, use a conditional GAN to synthesize additional positive (mining)
+examples to correct the same class-imbalance problem SMOTE addresses in the
+tabular track, then train a U-Net for pixel-level segmentation as a direct
+upgrade path for O2 -- the feature-stack/probability-map interface in
+`detection.py` is intentionally the same shape a CNN would output, so O3-O5
+would not need to change.
+
+## Why a tabular classifier, not a segmentation CNN?
+
+O2 is framed in the project brief as "semantic segmentation," but no public
+labeled dataset exists specifically for illegal-mining footprints. A
+per-pixel classifier on spectral indices (NDVI/NDMI/BSI/NDWI + raw bands)
+needs far fewer labeled pixels, trains in seconds, and stays explainable
+(feature importances, per-algorithm metrics) — appropriate for a hackathon
+timeline. `model_selection.py` compares five algorithms per run and picks
+whichever scores best, rather than committing to one architecture upfront.
+The code is structured so a U-Net can be swapped in later (same input
+feature stack, same output probability map) without touching O3-O5.
