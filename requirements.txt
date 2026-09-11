@@ -5,9 +5,9 @@ shapely
 scikit-learn
 requests
 pystac-client
-matplotlib
 scipy
 affine
 python-dotenv
 boto3
 imbalanced-learn
+pytest
