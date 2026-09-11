@@ -11,3 +11,4 @@ python-dotenv
 boto3
 imbalanced-learn
 pytest
+Pillow

@@ -77,18 +77,25 @@ def vectorize_status_alerts(
     crs: str,
     observation_date: str,
     min_area_m2: float = 500.0,
+    include_legal: bool = False,
 ) -> gpd.GeoDataFrame:
     """Like vectorize_alerts, but sourced from a 3-tier legal_status raster
     (see licensing.classify_legal_status): each polygon carries its own
     legal_status ("disputed" or "illegal" -- "legal"/"not_mining" pixels are
-    never vectorized as alerts). rio_shapes groups by raster value, so
-    disputed and illegal regions naturally come out as separate polygons
-    even where they're spatially adjacent.
+    never vectorized as alerts, unless include_legal=True). rio_shapes
+    groups by raster value, so disputed/illegal/legal regions naturally
+    come out as separate polygons even where they're spatially adjacent.
+
+    include_legal exists for map/visualization context (showing where
+    permitted mining sits alongside the alerts) -- the actual O5 alert
+    export should leave it False, since legal activity isn't an alert.
     """
     from . import licensing
     from rasterio.features import geometry_mask
 
     alertable = {int(licensing.LegalStatus.DISPUTED), int(licensing.LegalStatus.ILLEGAL)}
+    if include_legal:
+        alertable.add(int(licensing.LegalStatus.LEGAL))
     mask_bool = np.isin(legal_status, list(alertable))
     records = []
 

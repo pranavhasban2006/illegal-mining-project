@@ -18,7 +18,7 @@ import json
 import os
 import geopandas as gpd
 
-from . import config, preprocess, real_labels, weak_labels, hard_case_labels, detection, change_detection, licensing, alerts
+from . import config, preprocess, real_labels, weak_labels, hard_case_labels, detection, change_detection, licensing, alerts, visualize
 
 T0_DIR = "data/raw/t0_scene_2025"  # 2025-07-27 -- same calendar day, prior year
 T1_DIR = "data/raw/test_scene"     # 2026-07-27 -- see config.py for why same-month matters
@@ -112,6 +112,21 @@ def run(out_dir: str = "outputs"):
     if len(alert_gdf):
         print(alert_gdf["legal_status"].value_counts().to_string())
         print(alert_gdf[["alert_id", "legal_status", "confidence", "area_ha"]].head(10).to_string(index=False))
+
+    print("[Map] Rendering demo map (basemap + alerts, all statuses)...")
+    basemap_path = os.path.join(out_dir, "basemap.png")
+    visualize.render_basemap_png(bands_t1, basemap_path)
+
+    map_alert_gdf = alerts.vectorize_status_alerts(
+        legal_status, confidence_map, aoi_transform, crs,
+        observation_date=config.DEFAULT_DATE_T1, min_area_m2=2000.0,
+        include_legal=True,
+    )
+    from rasterio.transform import array_bounds
+    aoi_bounds_native = array_bounds(bands_t1.shape[1], bands_t1.shape[2], aoi_transform)
+    map_path = os.path.join(out_dir, "alert_map.html")
+    visualize.build_interactive_map(map_alert_gdf, crs, basemap_path, aoi_bounds_native, map_path)
+    print(f"[Map] Wrote {map_path} (open in a browser) -- basemap image alongside it at {basemap_path}")
 
     return alert_gdf
 
