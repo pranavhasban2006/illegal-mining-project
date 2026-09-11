@@ -74,6 +74,27 @@ data over La Pampa, Peru, both fixed but worth documenting for the review:
    against those hard cases would need hand-labeled examples specifically
    targeting them.
 
+4. **Hard-case validation -- measured.** Built a shared labeling tool
+   (`data/hard_cases/`, published as an Artifact) to hand-label 40 chips
+   stratified across genuinely ambiguous categories the classifier was never
+   validated on: near-concession boundaries, river sandbars, its own
+   50/50-probability cases, bare patches far from any known concession, and
+   mid-range-NDVI vegetation. Results (`data/hard_cases/validation_summary.md`,
+   single labeler, 2026-09-11 -- directional, not yet statistically
+   conclusive): accuracy 0.625, precision 0.586, **recall 1.000** on the 32
+   scored chips (8 marked "unsure" excluded). Recall being perfect matters
+   for an alert system (it isn't missing real mining in this sample); the
+   precision gap is concentrated almost entirely in two categories --
+   `classifier_uncertain` (0.25 accuracy: at the model's own decision
+   boundary it leans "mining", humans said "not mining" every time) and
+   `ambiguous_vegetation` (0.17 accuracy: moderate vegetation loss from
+   fallow land/agriculture/regrowth gets over-flagged as mining). Both point
+   to the same cause already seen in the O3 seasonal-confound fix: the
+   composite disturbance score leans too heavily on NDVI/NDMI (phenology-
+   sensitive) relative to mining-specific BSI/SWIR signal. Concrete next
+   step: re-weight `indices.py`'s composite score toward BSI/SWIR and
+   re-validate against this same 40-chip set.
+
 ## Setup
 
 ```powershell

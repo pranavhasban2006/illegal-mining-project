@@ -1,0 +1,93 @@
+{
+  "human": {
+    "chip_000_boundary_zone": "mining",
+    "chip_001_boundary_zone": "mining",
+    "chip_002_boundary_zone": "not_mining",
+    "chip_003_boundary_zone": "unsure",
+    "chip_004_boundary_zone": "mining",
+    "chip_005_boundary_zone": "mining",
+    "chip_006_boundary_zone": "unsure",
+    "chip_007_boundary_zone": "mining",
+    "chip_008_river_sandbar": "mining",
+    "chip_009_river_sandbar": "mining",
+    "chip_010_river_sandbar": "mining",
+    "chip_011_river_sandbar": "mining",
+    "chip_012_river_sandbar": "mining",
+    "chip_013_river_sandbar": "not_mining",
+    "chip_014_river_sandbar": "mining",
+    "chip_015_river_sandbar": "unsure",
+    "chip_016_classifier_uncertain": "not_mining",
+    "chip_017_classifier_uncertain": "not_mining",
+    "chip_018_classifier_uncertain": "not_mining",
+    "chip_019_classifier_uncertain": "not_mining",
+    "chip_020_classifier_uncertain": "not_mining",
+    "chip_021_classifier_uncertain": "not_mining",
+    "chip_022_classifier_uncertain": "not_mining",
+    "chip_023_classifier_uncertain": "not_mining",
+    "chip_024_far_bare_random": "mining",
+    "chip_025_far_bare_random": "mining",
+    "chip_026_far_bare_random": "mining",
+    "chip_027_far_bare_random": "unsure",
+    "chip_028_far_bare_random": "mining",
+    "chip_029_far_bare_random": "mining",
+    "chip_030_far_bare_random": "unsure",
+    "chip_031_far_bare_random": "unsure",
+    "chip_032_ambiguous_vegetation": "not_mining",
+    "chip_033_ambiguous_vegetation": "not_mining",
+    "chip_034_ambiguous_vegetation": "not_mining",
+    "chip_035_ambiguous_vegetation": "not_mining",
+    "chip_036_ambiguous_vegetation": "unsure",
+    "chip_037_ambiguous_vegetation": "mining",
+    "chip_038_ambiguous_vegetation": "unsure",
+    "chip_039_ambiguous_vegetation": "not_mining"
+  },
+  "confusion": {
+    "tp": 17,
+    "fp": 12,
+    "tn": 3,
+    "fn": 0
+  },
+  "metrics": {
+    "accuracy": 0.625,
+    "precision": 0.5862068965517241,
+    "recall": 1.0,
+    "f1": 0.7391304347826086
+  },
+  "by_category": {
+    "boundary_zone": {
+      "tp": 5,
+      "fp": 1,
+      "tn": 0,
+      "fn": 0,
+      "unsure": 2
+    },
+    "river_sandbar": {
+      "tp": 6,
+      "fp": 0,
+      "tn": 1,
+      "fn": 0,
+      "unsure": 1
+    },
+    "classifier_uncertain": {
+      "tp": 0,
+      "fp": 6,
+      "tn": 2,
+      "fn": 0,
+      "unsure": 0
+    },
+    "far_bare_random": {
+      "tp": 5,
+      "fp": 0,
+      "tn": 0,
+      "fn": 0,
+      "unsure": 3
+    },
+    "ambiguous_vegetation": {
+      "tp": 1,
+      "fp": 5,
+      "tn": 0,
+      "fn": 0,
+      "unsure": 2
+    }
+  }
+}

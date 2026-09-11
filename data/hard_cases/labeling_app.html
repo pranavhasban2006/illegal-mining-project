@@ -1,0 +1,478 @@
+<title>Mining Chip Review</title>
+<meta name="description" content="Team tool for labeling ambiguous Sentinel-2 image chips to validate the mining detector">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=Work+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<style>
+  :root {
+    --bg: #EEF0EB;
+    --surface: #FFFFFF;
+    --surface-2: #E4E8E1;
+    --border: #C9D0C5;
+    --text: #1B211D;
+    --text-dim: #5B6B5F;
+    --accent-mining: #B97A1E;
+    --accent-mining-bg: #B97A1E1A;
+    --accent-forest: #3D7A57;
+    --accent-forest-bg: #3D7A571A;
+    --accent-unsure: #52657A;
+    --accent-unsure-bg: #52657A1A;
+    --shadow: 0 1px 2px rgba(20,30,22,0.06), 0 4px 16px rgba(20,30,22,0.06);
+    --radius: 10px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0F1512;
+      --surface: #171E1A;
+      --surface-2: #1F2822;
+      --border: #2C3630;
+      --text: #E8ECE9;
+      --text-dim: #93A398;
+      --accent-mining: #E8A33D;
+      --accent-mining-bg: #E8A33D26;
+      --accent-forest: #63B98A;
+      --accent-forest-bg: #63B98A26;
+      --accent-unsure: #8CA0B8;
+      --accent-unsure-bg: #8CA0B826;
+      --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px rgba(0,0,0,0.35);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0F1512;
+    --surface: #171E1A;
+    --surface-2: #1F2822;
+    --border: #2C3630;
+    --text: #E8ECE9;
+    --text-dim: #93A398;
+    --accent-mining: #E8A33D;
+    --accent-mining-bg: #E8A33D26;
+    --accent-forest: #63B98A;
+    --accent-forest-bg: #63B98A26;
+    --accent-unsure: #8CA0B8;
+    --accent-unsure-bg: #8CA0B826;
+    --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px rgba(0,0,0,0.35);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Work Sans", system-ui, sans-serif;
+    padding: 28px 20px 60px;
+  }
+  h1, h2, h3 { font-family: "Archivo", system-ui, sans-serif; text-wrap: balance; margin: 0; }
+  .mono { font-family: "JetBrains Mono", ui-monospace, monospace; }
+  .tnum { font-variant-numeric: tabular-nums; }
+
+  .wrap { max-width: 1080px; margin: 0 auto; }
+
+  header.page {
+    display: flex; flex-direction: column; gap: 4px;
+    margin-bottom: 22px;
+  }
+  header.page .eyebrow {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--text-dim);
+  }
+  header.page h1 { font-size: 26px; font-weight: 800; }
+  header.page p.sub { color: var(--text-dim); font-size: 14px; max-width: 62ch; margin-top: 2px; }
+
+  .name-gate {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 24px; box-shadow: var(--shadow); max-width: 420px; margin: 60px auto;
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  .name-gate h2 { font-size: 18px; }
+  .name-gate input {
+    font: inherit; font-size: 15px; padding: 10px 12px; border-radius: 8px;
+    border: 1px solid var(--border); background: var(--bg); color: var(--text);
+  }
+  .name-gate button, .btn-primary {
+    font: inherit; font-weight: 600; font-size: 14px; padding: 10px 16px; border-radius: 8px;
+    border: none; background: var(--text); color: var(--bg); cursor: pointer;
+  }
+  .name-gate button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  main.app { display: none; grid-template-columns: 1fr 340px; gap: 22px; align-items: start; }
+  main.app.ready { display: grid; }
+  @media (max-width: 820px) { main.app.ready { grid-template-columns: 1fr; } }
+
+  .card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    box-shadow: var(--shadow); padding: 20px;
+  }
+
+  .chip-card .top-row {
+    display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 14px;
+  }
+  .category-tag {
+    font-family: "JetBrains Mono", monospace; font-size: 11px; letter-spacing: 0.06em;
+    text-transform: uppercase; padding: 4px 9px; border-radius: 999px;
+    border: 1px solid var(--border); color: var(--text-dim);
+  }
+  .coords { font-size: 12px; color: var(--text-dim); }
+
+  .chip-image-frame {
+    background: var(--surface-2); border-radius: 8px; overflow: hidden;
+    display: flex; align-items: center; justify-content: center;
+    aspect-ratio: 1; margin-bottom: 8px;
+  }
+  .chip-image-frame img { width: 100%; height: 100%; object-fit: cover; image-rendering: auto; }
+  .chip-caption { font-size: 12px; color: var(--text-dim); margin-bottom: 18px; }
+
+  .category-note {
+    font-size: 13px; color: var(--text-dim); background: var(--surface-2);
+    border-radius: 8px; padding: 10px 12px; margin-bottom: 18px; line-height: 1.5;
+  }
+
+  .label-buttons { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 14px; }
+  .label-btn {
+    font: inherit; font-weight: 600; font-size: 14px; padding: 14px 10px; border-radius: 8px;
+    border: 1.5px solid var(--border); background: var(--surface); color: var(--text);
+    cursor: pointer; transition: transform 0.08s ease;
+  }
+  .label-btn:hover { transform: translateY(-1px); }
+  .label-btn:active { transform: translateY(0); }
+  .label-btn.mining { border-color: var(--accent-mining); }
+  .label-btn.mining:hover, .label-btn.mining.selected { background: var(--accent-mining-bg); }
+  .label-btn.not-mining { border-color: var(--accent-forest); }
+  .label-btn.not-mining:hover, .label-btn.not-mining.selected { background: var(--accent-forest-bg); }
+  .label-btn.unsure { border-color: var(--accent-unsure); }
+  .label-btn.unsure:hover, .label-btn.unsure.selected { background: var(--accent-unsure-bg); }
+
+  .note-row { display: flex; gap: 8px; }
+  .note-row input {
+    flex: 1; font: inherit; font-size: 13px; padding: 8px 10px; border-radius: 8px;
+    border: 1px solid var(--border); background: var(--bg); color: var(--text);
+  }
+  .skip-link {
+    display: inline-block; margin-top: 12px; font-size: 13px; color: var(--text-dim);
+    text-decoration: underline; cursor: pointer; background: none; border: none; font-family: inherit;
+  }
+
+  .existing-votes { margin-top: 16px; padding-top: 14px; border-top: 1px dashed var(--border); }
+  .existing-votes h3 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-dim); margin-bottom: 8px; }
+  .vote-pill-row { display: flex; flex-wrap: wrap; gap: 6px; }
+  .vote-pill {
+    font-family: "JetBrains Mono", monospace; font-size: 11px; padding: 3px 8px; border-radius: 999px;
+    background: var(--surface-2); color: var(--text-dim);
+  }
+
+  .sidebar { display: flex; flex-direction: column; gap: 16px; position: sticky; top: 20px; }
+  .stat-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; }
+  .stat-row .big { font-family: "JetBrains Mono", monospace; font-size: 28px; font-weight: 600; }
+  .stat-row .label { font-size: 12px; color: var(--text-dim); }
+
+  .cat-bar-row { display: flex; flex-direction: column; gap: 3px; margin-bottom: 10px; }
+  .cat-bar-row:last-child { margin-bottom: 0; }
+  .cat-bar-label { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-dim); }
+  .cat-bar-track { height: 6px; border-radius: 3px; background: var(--surface-2); overflow: hidden; }
+  .cat-bar-fill { height: 100%; background: var(--text); border-radius: 3px; }
+
+  .grid-title { font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-dim); margin-bottom: 10px; }
+  .chip-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 5px; }
+  .chip-dot {
+    aspect-ratio: 1; border-radius: 4px; border: 1.5px solid var(--border);
+    background: var(--surface-2); cursor: pointer; padding: 0;
+    display: flex; align-items: center; justify-content: center; position: relative;
+  }
+  .chip-dot.current { outline: 2px solid var(--text); outline-offset: 1px; }
+  .chip-dot.v-mining { background: var(--accent-mining); border-color: var(--accent-mining); }
+  .chip-dot.v-not-mining { background: var(--accent-forest); border-color: var(--accent-forest); }
+  .chip-dot.v-unsure { background: var(--accent-unsure); border-color: var(--accent-unsure); }
+  .chip-dot.v-split { background: repeating-linear-gradient(45deg, var(--accent-mining), var(--accent-mining) 3px, var(--accent-forest) 3px, var(--accent-forest) 6px); }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 10px; font-size: 11px; color: var(--text-dim); margin-top: 10px; }
+  .legend span { display: inline-flex; align-items: center; gap: 4px; }
+  .legend i { width: 9px; height: 9px; border-radius: 2px; display: inline-block; }
+
+  footer.note { margin-top: 34px; font-size: 12px; color: var(--text-dim); max-width: 62ch; line-height: 1.6; }
+</style>
+
+<div class="wrap">
+  <header class="page">
+    <div class="eyebrow">Illegal Mining Detector &middot; validation set</div>
+    <h1>Ambiguous case review</h1>
+    <p class="sub">
+      The classifier is only validated on obvious cases so far (excavation inside a known
+      concession vs. dense forest far from one). These 40 chips are the genuinely hard
+      middle ground &mdash; river sandbars, boundary zones, mixed vegetation &mdash; sampled
+      specifically because they're easy to confuse. Your labels become the real
+      out-of-sample test set.
+    </p>
+  </header>
+
+  <div id="nameGate" class="name-gate">
+    <h2>Who's reviewing?</h2>
+    <p style="font-size:13px;color:var(--text-dim);margin:0;">Just for attributing votes &mdash; not a login.</p>
+    <input id="nameInput" type="text" placeholder="Your name" maxlength="40" autocomplete="off">
+    <button id="nameSubmit" disabled>Start reviewing</button>
+  </div>
+
+  <main id="app" class="app">
+    <section class="card chip-card">
+      <div class="top-row">
+        <span id="categoryTag" class="category-tag mono">&mdash;</span>
+        <span id="coords" class="coords mono tnum">&mdash;</span>
+      </div>
+      <div class="chip-image-frame">
+        <img id="chipImg" src="" alt="Satellite image chip">
+      </div>
+      <div id="categoryNote" class="category-note"></div>
+
+      <div class="label-buttons">
+        <button class="label-btn mining" data-label="mining">Mining</button>
+        <button class="label-btn not-mining" data-label="not_mining">Not mining</button>
+        <button class="label-btn unsure" data-label="unsure">Unsure</button>
+      </div>
+      <div class="note-row">
+        <input id="noteInput" type="text" placeholder="Optional note (e.g. “looks like a road, not a pit”)" maxlength="140">
+      </div>
+      <button class="skip-link" id="skipBtn">Skip &mdash; show me another chip</button>
+
+      <div class="existing-votes">
+        <h3>Votes on this chip so far</h3>
+        <div id="votePillRow" class="vote-pill-row"><span class="vote-pill">No votes yet</span></div>
+      </div>
+    </section>
+
+    <aside class="sidebar">
+      <div class="card">
+        <div class="stat-row">
+          <div>
+            <div id="coveredCount" class="big tnum">0/40</div>
+            <div class="label">chips with a vote</div>
+          </div>
+          <div style="text-align:right;">
+            <div id="myVoteCount" class="big tnum">0</div>
+            <div class="label">your votes</div>
+          </div>
+        </div>
+        <div id="categoryBars"></div>
+      </div>
+
+      <div class="card">
+        <div class="grid-title">All 40 chips &mdash; click to jump</div>
+        <div id="chipGrid" class="chip-grid"></div>
+        <div class="legend">
+          <span><i style="background:var(--accent-mining)"></i>Mining</span>
+          <span><i style="background:var(--accent-forest)"></i>Not mining</span>
+          <span><i style="background:var(--accent-unsure)"></i>Unsure</span>
+          <span><i style="background:repeating-linear-gradient(45deg,var(--accent-mining),var(--accent-mining) 2px,var(--accent-forest) 2px,var(--accent-forest) 4px)"></i>Split</span>
+          <span><i style="background:var(--surface-2);border:1px solid var(--border)"></i>No votes</span>
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <footer class="note">
+    Categories: <strong>boundary_zone</strong> (just outside a known concession),
+    <strong>river_sandbar</strong> (bright bare sediment near water &mdash; classic false-positive risk),
+    <strong>classifier_uncertain</strong> (model predicted close to 50/50),
+    <strong>far_bare_random</strong> (looks disturbed, far from any known concession &mdash;
+    possible undocumented mining), <strong>ambiguous_vegetation</strong> (mid-range NDVI,
+    could be fallow/agriculture/secondary growth). "Mining" means any excavated or
+    tailings-related bare ground, licensed or not &mdash; legality isn't visible in the
+    image itself.
+  </footer>
+</div>
+
+<script>
+  const CHIPS = [{"chip_id": "chip_000_boundary_zone", "category": "boundary_zone", "row": 915, "col": 288, "lon": 402845.0, "lat": 8575715.0, "proba_at_center": 1.0, "asset_id": "e86a4d8855cc3340d5ed8a840bb26f91"}, {"chip_id": "chip_001_boundary_zone", "category": "boundary_zone", "row": 1815, "col": 1785, "lon": 417815.0, "lat": 8566715.0, "proba_at_center": 1.0, "asset_id": "5fb1c4669e7a4ca307023a269d33d9e9"}, {"chip_id": "chip_002_boundary_zone", "category": "boundary_zone", "row": 823, "col": 251, "lon": 402475.0, "lat": 8576635.0, "proba_at_center": 0.995, "asset_id": "06570741e0761216a893dc11ef9a543f"}, {"chip_id": "chip_003_boundary_zone", "category": "boundary_zone", "row": 928, "col": 17, "lon": 400135.0, "lat": 8575585.0, "proba_at_center": 1.0, "asset_id": "3eac80008bf8bf036c92a7c695b30876"}, {"chip_id": "chip_004_boundary_zone", "category": "boundary_zone", "row": 1778, "col": 2177, "lon": 421735.0, "lat": 8567085.0, "proba_at_center": 0.995, "asset_id": "2a4c5ac5709c4fe8a47619599c99c1d6"}, {"chip_id": "chip_005_boundary_zone", "category": "boundary_zone", "row": 1950, "col": 1895, "lon": 418915.0, "lat": 8565365.0, "proba_at_center": 1.0, "asset_id": "dc16cf7740542fbb5be43539902e9d40"}, {"chip_id": "chip_006_boundary_zone", "category": "boundary_zone", "row": 1697, "col": 2223, "lon": 422195.0, "lat": 8567895.0, "proba_at_center": 1.0, "asset_id": "e8f4d9ec0b981f9c155d91f4fe4e01f0"}, {"chip_id": "chip_007_boundary_zone", "category": "boundary_zone", "row": 1795, "col": 1790, "lon": 417865.0, "lat": 8566915.0, "proba_at_center": 1.0, "asset_id": "3d744d0776794a7b82b4ad4c8f09f066"}, {"chip_id": "chip_008_river_sandbar", "category": "river_sandbar", "row": 2260, "col": 460, "lon": 404565.0, "lat": 8562265.0, "proba_at_center": 1.0, "asset_id": "50948f89f142e03aebc737b1c67ae90d"}, {"chip_id": "chip_009_river_sandbar", "category": "river_sandbar", "row": 132, "col": 105, "lon": 401015.0, "lat": 8583545.0, "proba_at_center": 1.0, "asset_id": "ced3c2a19882da1f11a0f44f091168f9"}, {"chip_id": "chip_010_river_sandbar", "category": "river_sandbar", "row": 2334, "col": 214, "lon": 402105.0, "lat": 8561525.0, "proba_at_center": 1.0, "asset_id": "f5922cb04c0970c935aa78e64a040a54"}, {"chip_id": "chip_011_river_sandbar", "category": "river_sandbar", "row": 2109, "col": 1844, "lon": 418405.0, "lat": 8563775.0, "proba_at_center": 1.0, "asset_id": "8e5f2918def0dd874c6205bb6c15b2ad"}, {"chip_id": "chip_012_river_sandbar", "category": "river_sandbar", "row": 189, "col": 69, "lon": 400655.0, "lat": 8582975.0, "proba_at_center": 1.0, "asset_id": "f83d6179ab9bad3e7d4d2befbdc4fabf"}, {"chip_id": "chip_013_river_sandbar", "category": "river_sandbar", "row": 994, "col": 750, "lon": 407465.0, "lat": 8574925.0, "proba_at_center": 0.0, "asset_id": "5e8bccd2616b640ed620ddab91223b07"}, {"chip_id": "chip_014_river_sandbar", "category": "river_sandbar", "row": 2111, "col": 123, "lon": 401195.0, "lat": 8563755.0, "proba_at_center": 1.0, "asset_id": "a045049be3b26cd4c2869965b97a7541"}, {"chip_id": "chip_015_river_sandbar", "category": "river_sandbar", "row": 2269, "col": 192, "lon": 401885.0, "lat": 8562175.0, "proba_at_center": 1.0, "asset_id": "fb1719ea7348110da2624da17f013cd7"}, {"chip_id": "chip_016_classifier_uncertain", "category": "classifier_uncertain", "row": 143, "col": 46, "lon": 400425.0, "lat": 8583435.0, "proba_at_center": 0.515, "asset_id": "582d40d2a8012cfb65bdddfe9747f260"}, {"chip_id": "chip_017_classifier_uncertain", "category": "classifier_uncertain", "row": 1243, "col": 1084, "lon": 410805.0, "lat": 8572435.0, "proba_at_center": 0.515, "asset_id": "3adbeb8a986da4427e43f0ff1f6b8b65"}, {"chip_id": "chip_018_classifier_uncertain", "category": "classifier_uncertain", "row": 1365, "col": 976, "lon": 409725.0, "lat": 8571215.0, "proba_at_center": 0.545, "asset_id": "04e9293c4141d219cf9bac6bc5959bef"}, {"chip_id": "chip_019_classifier_uncertain", "category": "classifier_uncertain", "row": 335, "col": 1139, "lon": 411355.0, "lat": 8581515.0, "proba_at_center": 0.515, "asset_id": "9560c1d34d47d2776ac29c792bce60ee"}, {"chip_id": "chip_020_classifier_uncertain", "category": "classifier_uncertain", "row": 1478, "col": 1759, "lon": 417555.0, "lat": 8570085.0, "proba_at_center": 0.51, "asset_id": "e4ddf62c29900d41dd1787ee7602e99a"}, {"chip_id": "chip_021_classifier_uncertain", "category": "classifier_uncertain", "row": 2245, "col": 1397, "lon": 413935.0, "lat": 8562415.0, "proba_at_center": 0.485, "asset_id": "c74a1b1dc2360f6eb15c01ddd3c64d13"}, {"chip_id": "chip_022_classifier_uncertain", "category": "classifier_uncertain", "row": 193, "col": 1549, "lon": 415455.0, "lat": 8582935.0, "proba_at_center": 0.485, "asset_id": "2beef3db3c7c8b4122026a722cd9eba7"}, {"chip_id": "chip_023_classifier_uncertain", "category": "classifier_uncertain", "row": 1731, "col": 1716, "lon": 417125.0, "lat": 8567555.0, "proba_at_center": 0.52, "asset_id": "35352483acc593ef989a02af7a633892"}, {"chip_id": "chip_024_far_bare_random", "category": "far_bare_random", "row": 2400, "col": 131, "lon": 401275.0, "lat": 8560865.0, "proba_at_center": 1.0, "asset_id": "7098af4ef76dc6bd9a87817cd03c09f6"}, {"chip_id": "chip_025_far_bare_random", "category": "far_bare_random", "row": 2236, "col": 290, "lon": 402865.0, "lat": 8562505.0, "proba_at_center": 1.0, "asset_id": "30d29f0fa2e82a87a1b9665f55e1d51f"}, {"chip_id": "chip_026_far_bare_random", "category": "far_bare_random", "row": 2552, "col": 200, "lon": 401965.0, "lat": 8559345.0, "proba_at_center": 1.0, "asset_id": "33a5f9fd000123054ebec6a2f6a1870a"}, {"chip_id": "chip_027_far_bare_random", "category": "far_bare_random", "row": 745, "col": 718, "lon": 407145.0, "lat": 8577415.0, "proba_at_center": 0.995, "asset_id": "adf60d6b3f96a0e4318dcbd2968105cf"}, {"chip_id": "chip_028_far_bare_random", "category": "far_bare_random", "row": 218, "col": 74, "lon": 400705.0, "lat": 8582685.0, "proba_at_center": 1.0, "asset_id": "cb1785c22f531adb96b6d3625bb0f828"}, {"chip_id": "chip_029_far_bare_random", "category": "far_bare_random", "row": 2389, "col": 256, "lon": 402525.0, "lat": 8560975.0, "proba_at_center": 1.0, "asset_id": "f04fee5394dbd883bf9356cfd522558c"}, {"chip_id": "chip_030_far_bare_random", "category": "far_bare_random", "row": 866, "col": 707, "lon": 407035.0, "lat": 8576205.0, "proba_at_center": 0.995, "asset_id": "068736beb14c3299a3e0f15be2de2345"}, {"chip_id": "chip_031_far_bare_random", "category": "far_bare_random", "row": 1867, "col": 1979, "lon": 419755.0, "lat": 8566195.0, "proba_at_center": 1.0, "asset_id": "c8f5cb62f21a951bca417f66195bcd09"}, {"chip_id": "chip_032_ambiguous_vegetation", "category": "ambiguous_vegetation", "row": 2118, "col": 460, "lon": 404565.0, "lat": 8563685.0, "proba_at_center": 0.62, "asset_id": "3a43c4d06bb04d10fc0f13bb473b2b5f"}, {"chip_id": "chip_033_ambiguous_vegetation", "category": "ambiguous_vegetation", "row": 538, "col": 747, "lon": 407435.0, "lat": 8579485.0, "proba_at_center": 0.765, "asset_id": "b976104ddbf9d3ee6da4b2e57e9198ff"}, {"chip_id": "chip_034_ambiguous_vegetation", "category": "ambiguous_vegetation", "row": 1040, "col": 771, "lon": 407675.0, "lat": 8574465.0, "proba_at_center": 0.995, "asset_id": "3fd42f9f12da83baeaf2fca3feb170ee"}, {"chip_id": "chip_035_ambiguous_vegetation", "category": "ambiguous_vegetation", "row": 393, "col": 559, "lon": 405555.0, "lat": 8580935.0, "proba_at_center": 0.715, "asset_id": "529e679d12b926b1a41eef24fd6fac93"}, {"chip_id": "chip_036_ambiguous_vegetation", "category": "ambiguous_vegetation", "row": 2434, "col": 903, "lon": 408995.0, "lat": 8560525.0, "proba_at_center": 0.64, "asset_id": "6a5834b26592022ef09b7af25f0dcd92"}, {"chip_id": "chip_037_ambiguous_vegetation", "category": "ambiguous_vegetation", "row": 2076, "col": 142, "lon": 401385.0, "lat": 8564105.0, "proba_at_center": 0.525, "asset_id": "8131e396d1b942b68e68c3db32d5be7f"}, {"chip_id": "chip_038_ambiguous_vegetation", "category": "ambiguous_vegetation", "row": 1260, "col": 1495, "lon": 414915.0, "lat": 8572265.0, "proba_at_center": 1.0, "asset_id": "7e9eaf902c8524cd838bb368eaff174f"}, {"chip_id": "chip_039_ambiguous_vegetation", "category": "ambiguous_vegetation", "row": 2096, "col": 1273, "lon": 412695.0, "lat": 8563905.0, "proba_at_center": 1.0, "asset_id": "6658f203912c6b7c8e425101c96c687c"}];
+
+  const CATEGORY_LABELS = {
+    boundary_zone: "Near mining boundary",
+    river_sandbar: "River / sandbar",
+    classifier_uncertain: "Model uncertain",
+    far_bare_random: "Bare, far from mines",
+    ambiguous_vegetation: "Mixed vegetation",
+  };
+  const CATEGORY_HINTS = {
+    boundary_zone: "Just outside a known concession boundary. Could be real illegal expansion, or just naturally sparse vegetation near an existing mine.",
+    river_sandbar: "Bright, bare-looking pixels near water. Natural sediment bars often mimic an excavated-soil signature — look for river channel shape and grain, not just brightness.",
+    classifier_uncertain: "The model's predicted probability was close to 50/50 here — these are the literal cases it's least sure about.",
+    far_bare_random: "Looks disturbed and is far from any known concession. Could be a genuinely undiscovered mining site, or a natural bare patch (rock, cleared field, dirt road).",
+    ambiguous_vegetation: "Mid-range vegetation index, far from any concession — could be fallow land, agriculture, or regrowing forest.",
+  };
+
+  let labelerName = localStorage.getItem("mining_labeler_name") || "";
+  let currentChipId = null;
+  let allVotes = [];
+  let db = null;
+
+  function slugify(s) {
+    return s.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || "anon";
+  }
+
+  function renderNameGate() {
+    const gate = document.getElementById("nameGate");
+    const app = document.getElementById("app");
+    if (labelerName) {
+      gate.style.display = "none";
+      app.classList.add("ready");
+      boot();
+    } else {
+      gate.style.display = "flex";
+      app.classList.remove("ready");
+    }
+  }
+
+  document.getElementById("nameInput").addEventListener("input", (e) => {
+    document.getElementById("nameSubmit").disabled = e.target.value.trim().length === 0;
+  });
+  document.getElementById("nameInput").addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && e.target.value.trim()) document.getElementById("nameSubmit").click();
+  });
+  document.getElementById("nameSubmit").addEventListener("click", () => {
+    const v = document.getElementById("nameInput").value.trim();
+    if (!v) return;
+    labelerName = v;
+    localStorage.setItem("mining_labeler_name", v);
+    renderNameGate();
+  });
+
+  function votesFor(chipId) {
+    return allVotes.filter((v) => v.chip_id === chipId);
+  }
+
+  function consensusClass(votes) {
+    if (votes.length === 0) return "";
+    const counts = { mining: 0, not_mining: 0, unsure: 0 };
+    votes.forEach((v) => { counts[v.label] = (counts[v.label] || 0) + 1; });
+    const top = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+    if (top[0][1] === 0) return "";
+    if (top.length > 1 && top[0][1] === top[1][1] && top[1][1] > 0) return "v-split";
+    if (top[0][0] === "mining") return "v-mining";
+    if (top[0][0] === "not_mining") return "v-not-mining";
+    return "v-unsure";
+  }
+
+  function pickNextChip() {
+    const mySlug = slugify(labelerName);
+    const votedByMe = new Set(allVotes.filter((v) => v.labeler_slug === mySlug).map((v) => v.chip_id));
+    const counts = {};
+    CHIPS.forEach((c) => { counts[c.chip_id] = 0; });
+    allVotes.forEach((v) => { if (counts[v.chip_id] !== undefined) counts[v.chip_id]++; });
+
+    const notVotedByMe = CHIPS.filter((c) => !votedByMe.has(c.chip_id));
+    const pool = notVotedByMe.length > 0 ? notVotedByMe : CHIPS;
+    pool.sort((a, b) => counts[a.chip_id] - counts[b.chip_id]);
+    return pool[0].chip_id;
+  }
+
+  function renderChip(chipId) {
+    const chip = CHIPS.find((c) => c.chip_id === chipId);
+    if (!chip) return;
+    currentChipId = chipId;
+    document.getElementById("categoryTag").textContent = CATEGORY_LABELS[chip.category] || chip.category;
+    document.getElementById("categoryNote").textContent = CATEGORY_HINTS[chip.category] || "";
+    document.getElementById("coords").textContent = `${chip.lat.toFixed(0)}N ${chip.lon.toFixed(0)}E · p=${chip.proba_at_center.toFixed(2)}`;
+    document.getElementById("chipImg").src = "/_blob/" + chip.asset_id;
+    document.getElementById("noteInput").value = "";
+    document.querySelectorAll(".label-btn").forEach((b) => b.classList.remove("selected"));
+    renderVotePills(chipId);
+    renderGrid();
+  }
+
+  function renderVotePills(chipId) {
+    const votes = votesFor(chipId);
+    const row = document.getElementById("votePillRow");
+    if (votes.length === 0) {
+      row.innerHTML = '<span class="vote-pill">No votes yet</span>';
+      return;
+    }
+    row.innerHTML = votes.map((v) => {
+      const labelText = v.label === "mining" ? "Mining" : v.label === "not_mining" ? "Not mining" : "Unsure";
+      return `<span class="vote-pill">${v.labeler}: ${labelText}</span>`;
+    }).join("");
+  }
+
+  function renderStats() {
+    const covered = new Set(allVotes.map((v) => v.chip_id)).size;
+    document.getElementById("coveredCount").textContent = `${covered}/${CHIPS.length}`;
+    const mySlug = slugify(labelerName);
+    document.getElementById("myVoteCount").textContent = allVotes.filter((v) => v.labeler_slug === mySlug).length;
+
+    const cats = {};
+    CHIPS.forEach((c) => { cats[c.category] = cats[c.category] || { total: 0, covered: new Set() }; cats[c.category].total++; });
+    allVotes.forEach((v) => {
+      const chip = CHIPS.find((c) => c.chip_id === v.chip_id);
+      if (chip) cats[chip.category].covered.add(chip.chip_id);
+    });
+    const bars = document.getElementById("categoryBars");
+    bars.innerHTML = Object.entries(cats).map(([cat, d]) => {
+      const pct = Math.round((d.covered.size / d.total) * 100);
+      return `<div class="cat-bar-row">
+        <div class="cat-bar-label"><span>${CATEGORY_LABELS[cat] || cat}</span><span class="mono tnum">${d.covered.size}/${d.total}</span></div>
+        <div class="cat-bar-track"><div class="cat-bar-fill" style="width:${pct}%"></div></div>
+      </div>`;
+    }).join("");
+  }
+
+  function renderGrid() {
+    const grid = document.getElementById("chipGrid");
+    grid.innerHTML = "";
+    CHIPS.forEach((chip) => {
+      const votes = votesFor(chip.chip_id);
+      const btn = document.createElement("button");
+      btn.className = "chip-dot " + consensusClass(votes) + (chip.chip_id === currentChipId ? " current" : "");
+      btn.title = `${CATEGORY_LABELS[chip.category]} — ${votes.length} vote(s)`;
+      btn.addEventListener("click", () => renderChip(chip.chip_id));
+      grid.appendChild(btn);
+    });
+  }
+
+  async function submitVote(label) {
+    if (!currentChipId || !db) return;
+    const mySlug = slugify(labelerName);
+    const note = document.getElementById("noteInput").value.trim();
+    const docId = currentChipId + "__" + mySlug;
+    try {
+      await db.doc("votes/" + docId).set({
+        chip_id: currentChipId,
+        labeler: labelerName,
+        labeler_slug: mySlug,
+        label: label,
+        note: note,
+        ts: new Date().toISOString(),
+      });
+    } catch (e) {
+      console.error("vote failed", e);
+    }
+  }
+
+  document.querySelectorAll(".label-btn").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      document.querySelectorAll(".label-btn").forEach((b) => b.classList.remove("selected"));
+      btn.classList.add("selected");
+      await submitVote(btn.dataset.label);
+      setTimeout(() => renderChip(pickNextChip()), 250);
+    });
+  });
+  document.getElementById("skipBtn").addEventListener("click", () => {
+    const others = CHIPS.filter((c) => c.chip_id !== currentChipId);
+    renderChip(others[Math.floor(Math.random() * others.length)].chip_id);
+  });
+
+  async function boot() {
+    renderChip(CHIPS[0].chip_id);
+    renderStats();
+    renderGrid();
+
+    if (!window.claude || !window.claude.use) return;
+    db = await window.claude.use("db");
+    if (!db) return;
+
+    db.collection("votes").onSnapshot(
+      (snap) => {
+        allVotes = snap.docs.map((d) => d.data());
+        renderStats();
+        renderVotePills(currentChipId);
+        renderGrid();
+      },
+      (err) => console.error("db subscribe error", err),
+    );
+  }
+
+  renderNameGate();
+</script>
