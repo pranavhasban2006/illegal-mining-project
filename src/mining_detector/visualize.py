@@ -96,13 +96,16 @@ def build_interactive_map(
 </div>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-  var map = L.map('map').setView([{center_lat}, {center_lon}], 12);
-  L.tileLayer('https://{{s}}.tile.openstreetmap.org/{{z}}/{{x}}/{{y}}.png', {{
-    attribution: 'Map data (c) OpenStreetMap contributors', maxZoom: 18,
-  }}).addTo(map);
+  // No external tile provider -- OSM's tile servers block direct/offline
+  // usage like this (their usage policy requires registered apps with a
+  // proper referrer). The Sentinel-2 basemap image below IS the map; no
+  // background tile layer is needed and this keeps the demo fully
+  // offline-safe.
+  var map = L.map('map', {{ crs: L.CRS.EPSG3857, minZoom: 10 }}).setView([{center_lat}, {center_lon}], 13);
 
   var imageBounds = [[{miny}, {minx}], [{maxy}, {maxx}]];
-  L.imageOverlay('{basemap_filename}', imageBounds, {{opacity: 0.85}}).addTo(map);
+  L.imageOverlay('{basemap_filename}', imageBounds, {{opacity: 1}}).addTo(map);
+  map.setMaxBounds(imageBounds);
 
   var statusColors = {json.dumps(STATUS_COLORS)};
   var alertData = {json.dumps(features_geojson)};
