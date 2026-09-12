@@ -15,6 +15,26 @@ Maps to project objectives O1-O5:
 - `pipeline.run_demo()` -- synthetic data, no credentials needed.
 - `pipeline.run_live()` -- the real pipeline over the Peru pilot AOI (delegates to `real_run.py`).
 
+## Future-work status (Project Review 1 papers + our own identified gaps)
+
+Every future-work item named by the five papers reviewed in Project Review
+1, plus items this project identified in its own testing, tracked here in
+one place. Detailed writeups (methodology, exact numbers, honest caveats)
+are linked from each row -- this table is the scannable summary.
+
+| # | Item | Source | Status | Result |
+|---|---|---|---|---|
+| 1 | Terrain covariates (elevation + hydrological proximity) | SAR-based mining paper (Lemes Neto et al.) | ✅ Implemented & tested | **Negative**: both features ranked lowest of 12 (importance <0.001) -- NDWI already captures water-proximity more directly. See "Known limitations" #6 below. |
+| 2 | QC-SMOTE (quality-controlled oversampling) | Upman & Gowda (arXiv 2606.24625) | ✅ Implemented & tested | **Negative**: statistically identical to standard SMOTE -- Random Forest's ensemble voting buffers against what QC-SMOTE targets. See "Known limitations" #7. |
+| 3 | Reduce computational cost for edge/real-time deployment | MineFormer, TransSiamUNet | ✅ Implemented & tested | **Mixed, genuinely informative**: 2 of 5 lite variants matched full accuracy at a fraction of the params/latency; 2 lite variants *outperformed* the full model; 1 showed the expected capacity-accuracy tradeoff. See "Lightweight-variant benchmark" below. |
+| 4 | Fuse fine-scale verified ground truth into a coarser satellite-scale model | ELDOR | ✅ Implemented & tested | **Positive**: human-verified hard-case labels folded into training measurably fixed a real precision failure -- held-out F1 0.833 → 0.909. See "Weak-label ceiling" in Known limitations. |
+| 5 | Multi-region generalization (reduce the training/transfer accuracy gap) | SAR-based mining paper, EuroMineNet | 🔄 In progress | Second real mining region identified (~45km from the pilot AOI, via real RAISG concession clustering, not a guessed coordinate); Sentinel-2 imagery downloading now. Will report the measured transfer-vs-in-domain F1 gap once complete -- not yet available. |
+| 6 | Extending validation to non-mining land-cover domains (forest/agricultural) | TransSiamUNet | ❌ Not attempted | Out of scope for this phase; noted here rather than silently dropped. |
+| 7 | Adapting large-scale EO foundation models / continental-scale monitoring | EuroMineNet | ❌ Not attempted | Explicitly out of scope for an academic prototype timeline. |
+| 8 | Real bi-temporal segmentation training data for the Siamese architecture (OSCD dataset) | TransSiamUNet (uses OSCD) | ❌ Attempted, abandoned | HuggingFace CDN speed degraded to 43KB/s during download (would have taken 2.5+ hours); cut losses rather than stall further progress. Siamese model remains on the 32 real hard-case chips. |
+| 9 | More labelers on the 40-chip hard-case set (statistical confidence) | This project's own finding | ❌ Not done | Blocked on human participation, not code -- the labeling tool already supports it with zero code changes. |
+| 10 | Larger real training datasets (EuroMineNet 18.4GB, MineNetCD 3.5GB) | EuroMineNet, MineNetCD | ❌ Not fetched | Both real, legitimate, correctly-hosted datasets for papers we cite -- sizes made them impractical for this phase's timeline. Identified and documented rather than silently ignored. |
+
 ## Known limitations (real-data run, Madre de Dios pilot)
 
 Two methodological issues surfaced running O1-O5 against real Sentinel-2
