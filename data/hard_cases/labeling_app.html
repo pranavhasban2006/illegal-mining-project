@@ -186,6 +186,29 @@
   .legend span { display: inline-flex; align-items: center; gap: 4px; }
   .legend i { width: 9px; height: 9px; border-radius: 2px; display: inline-block; }
 
+  .sync-banner {
+    font-size: 13px; padding: 10px 14px; border-radius: 8px; margin-bottom: 16px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .sync-banner.live { background: var(--accent-forest-bg); color: var(--accent-forest); }
+  .sync-banner.local { background: var(--accent-mining-bg); color: var(--accent-mining); }
+
+  .sync-card textarea {
+    width: 100%; font-family: "JetBrains Mono", monospace; font-size: 11px;
+    padding: 8px; border-radius: 8px; border: 1px solid var(--border);
+    background: var(--surface-2); color: var(--text); resize: vertical; min-height: 70px;
+  }
+  .sync-card .row { display: flex; gap: 8px; margin-top: 8px; }
+  .sync-card button {
+    font: inherit; font-weight: 600; font-size: 13px; padding: 8px 14px; border-radius: 8px;
+    border: 1px solid var(--border); background: var(--surface); color: var(--text); cursor: pointer;
+  }
+  .sync-card button.primary { background: var(--text); color: var(--bg); border-color: var(--text); }
+  .sync-card p.hint { font-size: 12px; color: var(--text-dim); margin: 6px 0 0; }
+  .sync-card .import-status { font-size: 12px; margin-top: 8px; }
+  .sync-card .import-status.ok { color: var(--accent-forest); }
+  .sync-card .import-status.err { color: var(--accent-mining); }
+
   footer.note { margin-top: 34px; font-size: 12px; color: var(--text-dim); max-width: 62ch; line-height: 1.6; }
 </style>
 
@@ -211,6 +234,7 @@
 
   <main id="app" class="app">
     <section class="card chip-card">
+      <div id="syncBanner" class="sync-banner local" style="display:none;"></div>
       <div class="top-row">
         <span id="categoryTag" class="category-tag mono">&mdash;</span>
         <span id="coords" class="coords mono tnum">&mdash;</span>
@@ -233,6 +257,31 @@
       <div class="existing-votes">
         <h3>Votes on this chip so far</h3>
         <div id="votePillRow" class="vote-pill-row"><span class="vote-pill">No votes yet</span></div>
+      </div>
+
+      <div id="exportCard" class="sync-card" style="display:none; margin-top:16px; padding-top:14px; border-top:1px dashed var(--border);">
+        <h3 style="font-size:12px;text-transform:uppercase;letter-spacing:0.04em;color:var(--text-dim);margin-bottom:8px;">Send your votes to the project owner</h3>
+        <p class="hint">
+          You're not signed into the account that owns this page, so votes save to
+          <em>this browser only</em>. Copy the code below and send it (WhatsApp, email,
+          whatever's easiest) to whoever owns the project &mdash; they'll paste it in below
+          to add your votes to the shared results.
+        </p>
+        <textarea id="exportCode" readonly></textarea>
+        <div class="row">
+          <button id="copyExportBtn" class="primary">Copy code</button>
+          <span id="copyStatus" class="import-status"></span>
+        </div>
+      </div>
+
+      <div id="importCard" class="sync-card" style="display:none; margin-top:16px; padding-top:14px; border-top:1px dashed var(--border);">
+        <h3 style="font-size:12px;text-transform:uppercase;letter-spacing:0.04em;color:var(--text-dim);margin-bottom:8px;">Import a teammate's votes</h3>
+        <p class="hint">Paste the code a teammate sent you, then click Import.</p>
+        <textarea id="importInput" placeholder="Paste code here"></textarea>
+        <div class="row">
+          <button id="importBtn" class="primary">Import</button>
+        </div>
+        <div id="importStatus" class="import-status"></div>
       </div>
     </section>
 
@@ -297,11 +346,40 @@
 
   let labelerName = localStorage.getItem("mining_labeler_name") || "";
   let currentChipId = null;
-  let allVotes = [];
+  let dbVotes = [];
   let db = null;
 
   function slugify(s) {
     return s.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || "anon";
+  }
+
+  // --- Local fallback storage: used whenever db is unavailable (viewer is
+  // not signed into the artifact owner's Claude organization -- db/assets
+  // capabilities are org-restricted regardless of the artifact's public/
+  // private share setting). Votes still get recorded, just not synced
+  // automatically; export/import bridges the gap manually. ---
+  function loadLocalVotes() {
+    try { return JSON.parse(localStorage.getItem("mining_local_votes") || "[]"); }
+    catch (e) { return []; }
+  }
+  function saveLocalVotes(votes) {
+    localStorage.setItem("mining_local_votes", JSON.stringify(votes));
+  }
+  let localVotes = loadLocalVotes();
+
+  function allKnownVotes() {
+    // db votes are authoritative where they exist; local votes fill in for
+    // this browser's own (unsynced) votes so the UI still reflects them.
+    const seen = new Set(dbVotes.map((v) => v.chip_id + "__" + v.labeler_slug));
+    const extra = localVotes.filter((v) => !seen.has(v.chip_id + "__" + v.labeler_slug));
+    return dbVotes.concat(extra);
+  }
+
+  function encodeVotes(votes) {
+    return btoa(unescape(encodeURIComponent(JSON.stringify(votes))));
+  }
+  function decodeVotes(code) {
+    return JSON.parse(decodeURIComponent(escape(atob(code.trim()))));
   }
 
   function renderNameGate() {
@@ -332,7 +410,7 @@
   });
 
   function votesFor(chipId) {
-    return allVotes.filter((v) => v.chip_id === chipId);
+    return allKnownVotes().filter((v) => v.chip_id === chipId);
   }
 
   function consensusClass(votes) {
@@ -348,11 +426,12 @@
   }
 
   function pickNextChip() {
+    const votes = allKnownVotes();
     const mySlug = slugify(labelerName);
-    const votedByMe = new Set(allVotes.filter((v) => v.labeler_slug === mySlug).map((v) => v.chip_id));
+    const votedByMe = new Set(votes.filter((v) => v.labeler_slug === mySlug).map((v) => v.chip_id));
     const counts = {};
     CHIPS.forEach((c) => { counts[c.chip_id] = 0; });
-    allVotes.forEach((v) => { if (counts[v.chip_id] !== undefined) counts[v.chip_id]++; });
+    votes.forEach((v) => { if (counts[v.chip_id] !== undefined) counts[v.chip_id]++; });
 
     const notVotedByMe = CHIPS.filter((c) => !votedByMe.has(c.chip_id));
     const pool = notVotedByMe.length > 0 ? notVotedByMe : CHIPS;
@@ -388,14 +467,15 @@
   }
 
   function renderStats() {
-    const covered = new Set(allVotes.map((v) => v.chip_id)).size;
+    const votes = allKnownVotes();
+    const covered = new Set(votes.map((v) => v.chip_id)).size;
     document.getElementById("coveredCount").textContent = `${covered}/${CHIPS.length}`;
     const mySlug = slugify(labelerName);
-    document.getElementById("myVoteCount").textContent = allVotes.filter((v) => v.labeler_slug === mySlug).length;
+    document.getElementById("myVoteCount").textContent = votes.filter((v) => v.labeler_slug === mySlug).length;
 
     const cats = {};
     CHIPS.forEach((c) => { cats[c.category] = cats[c.category] || { total: 0, covered: new Set() }; cats[c.category].total++; });
-    allVotes.forEach((v) => {
+    votes.forEach((v) => {
       const chip = CHIPS.find((c) => c.chip_id === v.chip_id);
       if (chip) cats[chip.category].covered.add(chip.chip_id);
     });
@@ -423,23 +503,87 @@
   }
 
   async function submitVote(label) {
-    if (!currentChipId || !db) return;
+    if (!currentChipId) return;
     const mySlug = slugify(labelerName);
     const note = document.getElementById("noteInput").value.trim();
-    const docId = currentChipId + "__" + mySlug;
-    try {
-      await db.doc("votes/" + docId).set({
-        chip_id: currentChipId,
-        labeler: labelerName,
-        labeler_slug: mySlug,
-        label: label,
-        note: note,
-        ts: new Date().toISOString(),
-      });
-    } catch (e) {
-      console.error("vote failed", e);
+    const vote = {
+      chip_id: currentChipId,
+      labeler: labelerName,
+      labeler_slug: mySlug,
+      label: label,
+      note: note,
+      ts: new Date().toISOString(),
+    };
+
+    if (db) {
+      try {
+        await db.doc("votes/" + currentChipId + "__" + mySlug).set(vote);
+        return;
+      } catch (e) {
+        console.error("vote failed, falling back to local storage", e);
+      }
     }
+
+    // No db access (outside the artifact owner's org) or the write failed --
+    // record locally so the vote isn't lost, and refresh the export code.
+    localVotes = localVotes.filter((v) => !(v.chip_id === vote.chip_id && v.labeler_slug === vote.labeler_slug));
+    localVotes.push(vote);
+    saveLocalVotes(localVotes);
+    renderExportCode();
   }
+
+  function renderExportCode() {
+    const box = document.getElementById("exportCode");
+    if (box) box.value = localVotes.length ? encodeVotes(localVotes) : "";
+  }
+
+  document.getElementById("copyExportBtn").addEventListener("click", async () => {
+    const box = document.getElementById("exportCode");
+    const status = document.getElementById("copyStatus");
+    try {
+      await navigator.clipboard.writeText(box.value);
+      status.textContent = "Copied!";
+      status.className = "import-status ok";
+    } catch (e) {
+      box.select();
+      status.textContent = "Couldn't auto-copy -- text is selected, press Ctrl+C.";
+      status.className = "import-status err";
+    }
+    setTimeout(() => { status.textContent = ""; }, 3000);
+  });
+
+  document.getElementById("importBtn").addEventListener("click", async () => {
+    const input = document.getElementById("importInput");
+    const status = document.getElementById("importStatus");
+    let incoming;
+    try {
+      incoming = decodeVotes(input.value);
+      if (!Array.isArray(incoming)) throw new Error("not an array");
+    } catch (e) {
+      status.textContent = "That code doesn't look valid -- ask your teammate to re-copy it.";
+      status.className = "import-status err";
+      return;
+    }
+    if (!db) {
+      status.textContent = "You need to be signed into the project owner's account/organization to import -- ask them to paste this in instead.";
+      status.className = "import-status err";
+      return;
+    }
+    try {
+      let count = 0;
+      for (const v of incoming) {
+        if (!v.chip_id || !v.labeler_slug || !v.label) continue;
+        await db.doc("votes/" + v.chip_id + "__" + v.labeler_slug).set(v);
+        count++;
+      }
+      status.textContent = `Imported ${count} vote(s).`;
+      status.className = "import-status ok";
+      input.value = "";
+    } catch (e) {
+      status.textContent = "Import failed: " + e.message;
+      status.className = "import-status err";
+    }
+  });
 
   document.querySelectorAll(".label-btn").forEach((btn) => {
     btn.addEventListener("click", async () => {
@@ -455,23 +599,38 @@
   });
 
   async function boot() {
-    renderChip(CHIPS[0].chip_id);
+    renderChip(pickNextChip());
     renderStats();
     renderGrid();
+    renderExportCode();
+    document.getElementById("importCard").style.display = "block";
 
-    if (!window.claude || !window.claude.use) return;
-    db = await window.claude.use("db");
-    if (!db) return;
+    const banner = document.getElementById("syncBanner");
+    banner.style.display = "flex";
 
-    db.collection("votes").onSnapshot(
-      (snap) => {
-        allVotes = snap.docs.map((d) => d.data());
-        renderStats();
-        renderVotePills(currentChipId);
-        renderGrid();
-      },
-      (err) => console.error("db subscribe error", err),
-    );
+    if (window.claude && window.claude.use) {
+      db = await window.claude.use("db");
+    }
+
+    if (db) {
+      banner.className = "sync-banner live";
+      banner.textContent = "Signed in -- your votes save automatically and sync live with everyone else.";
+      document.getElementById("exportCard").style.display = "none";
+
+      db.collection("votes").onSnapshot(
+        (snap) => {
+          dbVotes = snap.docs.map((d) => d.data());
+          renderStats();
+          renderVotePills(currentChipId);
+          renderGrid();
+        },
+        (err) => console.error("db subscribe error", err),
+      );
+    } else {
+      banner.className = "sync-banner local";
+      banner.textContent = "Not signed into the project owner's account -- your votes save to this browser only. See below to send them in.";
+      document.getElementById("exportCard").style.display = "block";
+    }
   }
 
   renderNameGate();
