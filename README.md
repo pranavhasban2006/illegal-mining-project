@@ -294,3 +294,40 @@ per-model metrics.
 
 To run: `pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu`,
 then `python -m mining_detector.hybrid_models.train` (PYTHONPATH=src).
+
+### Upgrade: real segmentation on a real labeled dataset
+
+The proof-of-concept caveat above is now only true for `siamese_cnn_transformer`.
+The other four were retrained on a real, independently-sourced labeled
+dataset (Open-Pit Mining Areas Dataset -- 10 512x512 satellite image/binary-
+mask TIFF pairs; not redistributed via git, drop it at
+`data/external/open_pit_mining_dataset/Data/` to reproduce; no license file
+was included with the download, so cite wherever you originally obtained it
+before submitting). Tiled into 64x64 patches (512 train / 128 test,
+held out from 2 of the 10 source tiles entirely so no train patch is
+spatially adjacent to a test patch) via `openpit_dataset.py`:
+
+| Model | Task | Test result | n (test) |
+|---|---|---|---|
+| `unet_transformer` | **real per-pixel segmentation** | IoU 0.541, Dice 0.577 | 128 patches |
+| `resnet_attention_unet` | **real per-pixel segmentation** | IoU 0.254, Dice 0.320 | 128 patches |
+| `yolo_vit_lstm` | classification (real patch labels) | acc 0.945, F1 0.863 | 128 patches |
+| `cnn_bilstm` | classification (real patch labels) | acc 0.844, F1 0.655 | 128 patches |
+| `siamese_cnn_transformer` | classification (32-chip set, unchanged) | acc 0.875, F1 0.889 | 8 chips |
+
+Run: `python -m mining_detector.hybrid_models.train_openpit` (PYTHONPATH=src).
+Results: `data/hybrid_models_results/openpit_results.json`.
+
+**Read this before citing these numbers**: the held-out test set comes from
+2 tiles drawn from only 2 underlying source scenes (the other 8 training
+tiles are also from those same 2 scenes) -- so this measures interpolation
+within two known mining sites, not generalization to a genuinely new
+location. `resnet_attention_unet` underperforming `unet_transformer` on
+segmentation is a real, reproducible result in our tests, not a bug --
+plausibly because its decoder produces a coarser native resolution (32x32,
+upsampled to match) versus `unet_transformer`'s native 64x64 output, though
+we have not isolated the exact cause. `siamese_cnn_transformer` is
+intentionally NOT retrained on this dataset: it needs genuine bi-temporal
+pairs, which this single-date dataset doesn't have, so it correctly stays
+on the 32 real paired t0/t1 hard-case chips instead of being forced onto
+data that doesn't match its design.

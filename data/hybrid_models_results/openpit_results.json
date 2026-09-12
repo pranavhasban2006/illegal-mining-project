@@ -1,0 +1,76 @@
+{
+  "unet_transformer": {
+    "model": "unet_transformer",
+    "task": "segmentation",
+    "n_params": 29523,
+    "test_dice_mean": 0.57737533102838,
+    "test_iou_mean": 0.5414547483166834,
+    "n_test_patches": 128
+  },
+  "resnet_attention_unet": {
+    "model": "resnet_attention_unet",
+    "task": "segmentation",
+    "n_params": 35532,
+    "test_dice_mean": 0.31976109108939765,
+    "test_iou_mean": 0.25375791435647754,
+    "n_test_patches": 128
+  },
+  "yolo_vit_lstm": {
+    "model": "yolo_vit_lstm",
+    "task": "classification",
+    "n_params": 40065,
+    "n_train": 512,
+    "n_test": 128,
+    "train": {
+      "n": 512,
+      "tp": 125,
+      "fp": 3,
+      "tn": 377,
+      "fn": 7,
+      "accuracy": 0.98046875,
+      "precision": 0.9765625,
+      "recall": 0.946969696969697,
+      "f1": 0.9615384615384616
+    },
+    "test": {
+      "n": 128,
+      "tp": 22,
+      "fp": 4,
+      "tn": 99,
+      "fn": 3,
+      "accuracy": 0.9453125,
+      "precision": 0.8461538461538461,
+      "recall": 0.88,
+      "f1": 0.8627450980392156
+    }
+  },
+  "cnn_bilstm": {
+    "model": "cnn_bilstm",
+    "task": "classification",
+    "n_params": 22145,
+    "n_train": 512,
+    "n_test": 128,
+    "train": {
+      "n": 512,
+      "tp": 93,
+      "fp": 37,
+      "tn": 343,
+      "fn": 39,
+      "accuracy": 0.8515625,
+      "precision": 0.7153846153846154,
+      "recall": 0.7045454545454546,
+      "f1": 0.7099236641221374
+    },
+    "test": {
+      "n": 128,
+      "tp": 19,
+      "fp": 14,
+      "tn": 89,
+      "fn": 6,
+      "accuracy": 0.84375,
+      "precision": 0.5757575757575758,
+      "recall": 0.76,
+      "f1": 0.6551724137931034
+    }
+  }
+}

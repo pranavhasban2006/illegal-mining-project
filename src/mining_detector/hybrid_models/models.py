@@ -1,23 +1,34 @@
-"""Five hybrid deep learning architectures, adapted for binary
-mining/not-mining classification on 64x64 RGB chips.
+"""Five hybrid deep learning architectures for mining detection.
 
-Honesty note (see dataset.py): several of these architectures were
-originally designed for detection (YOLO) or segmentation (U-Net) tasks
-that need bounding-box or pixel-mask labels we don't have for this AOI.
-Each is implemented as a genuine instance of its named components --
-real conv backbones, real multi-head self-attention (nn.TransformerEncoderLayer),
+Two data regimes are used, matched to what each architecture actually
+needs and what ground truth actually exists:
+
+- U-Net+Transformer and ResNet+Attention U-Net are genuine per-pixel
+  segmentation models, trained against real binary masks from the Open-Pit
+  Mining Areas Dataset (openpit_dataset.py, 10 real image/mask tiles,
+  64x64 patches). `forward(x, return_map=True)` returns the full-resolution
+  segmentation logit map for this; the default `return_map=False` path
+  (global-average-pooled classification logit) is kept for the small
+  hard-case chip set (dataset.py) where no masks exist.
+- YOLO+ViT+LSTM, CNN+BiLSTM, and Siamese CNN+Transformer are
+  classification-only (YOLO/LSTM don't have a natural per-pixel output;
+  the Siamese model is genuinely bi-temporal but the only bi-temporal
+  pairs available are the 32 hard-case chips, not the single-date Open-Pit
+  dataset). YOLO+ViT+LSTM and CNN+BiLSTM ARE trained on the Open-Pit
+  dataset's patch-level labels (much larger n than the 32 chips), giving
+  them a real accuracy signal rather than a 24-example proof of concept.
+
+Every architecture is a genuine instance of its named components -- real
+conv backbones, real multi-head self-attention (nn.TransformerEncoderLayer),
 real LSTM/BiLSTM, a real Siamese shared-weight encoder, real residual
-blocks, a real attention-gate mechanism -- with a classification head
-substituted for the missing detection/segmentation head. Given the
-training set is 24-32 chips, these are intentionally small/shallow
-(a full-scale YOLOv8 or ResNet-50 would do nothing but memorize 24
-examples) -- proof-of-concept scale, not production scale.
+blocks, a real attention-gate mechanism.
 """
 
 from __future__ import annotations
 
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 
 def _conv_block(in_ch, out_ch, stride=2):
@@ -87,7 +98,7 @@ class UNetTransformer(nn.Module):
 
         self.head = nn.Linear(1, 1)
 
-    def forward(self, x):
+    def forward(self, x, return_map: bool = False):
         e1 = self.enc1(x)          # (B, 16, 32, 32)
         e2 = self.enc2(e1)         # (B, C, 16, 16)
 
@@ -100,6 +111,9 @@ class UNetTransformer(nn.Module):
         d1 = self.dec1(torch.cat([d1, e1], dim=1))
         d2 = self.up2(d1)                      # (B, 8, 64, 64)
         seg_map = self.dec2(d2)                # (B, 1, 64, 64)
+
+        if return_map:
+            return F.interpolate(seg_map, size=x.shape[-2:], mode="bilinear", align_corners=False).squeeze(1)
 
         pooled = seg_map.mean(dim=[2, 3])      # (B, 1) -- global average pool
         return self.head(pooled).squeeze(-1)
@@ -228,7 +242,7 @@ class ResNetAttentionUNet(nn.Module):
 
         self.head = nn.Linear(1, 1)
 
-    def forward(self, x):
+    def forward(self, x, return_map: bool = False):
         s1 = self.res1(self.stem(x))       # (B, base_ch, 32, 32) -- skip connection
         bottleneck = self.res2(self.down(s1))  # (B, 2*base_ch, 16, 16)
 
@@ -236,6 +250,9 @@ class ResNetAttentionUNet(nn.Module):
         gated_skip = self.attn_gate(gate=up, skip=s1)
         d = self.dec(torch.cat([up, gated_skip], dim=1))
         seg_map = self.out_conv(d)         # (B, 1, 32, 32)
+
+        if return_map:
+            return F.interpolate(seg_map, size=x.shape[-2:], mode="bilinear", align_corners=False).squeeze(1)
 
         pooled = seg_map.mean(dim=[2, 3])
         return self.head(pooled).squeeze(-1)
