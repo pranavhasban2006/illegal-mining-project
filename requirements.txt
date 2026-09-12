@@ -12,3 +12,10 @@ boto3
 imbalanced-learn
 pytest
 Pillow
+
+# Hybrid deep-learning architectures (src/mining_detector/hybrid_models/).
+# Install these separately with the CPU wheel index for a much smaller,
+# faster download unless you specifically need CUDA:
+#   pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+torch
+torchvision

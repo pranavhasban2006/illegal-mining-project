@@ -249,3 +249,48 @@ timeline. `model_selection.py` compares five algorithms per run and picks
 whichever scores best, rather than committing to one architecture upfront.
 The code is structured so a U-Net can be swapped in later (same input
 feature stack, same output probability map) without touching O3-O5.
+
+## 5 hybrid deep-learning architectures (proof-of-concept scale)
+
+`src/mining_detector/hybrid_models/` implements five hybrid architectures
+requested for comparison: YOLO+ViT+LSTM, U-Net+Transformer, CNN+BiLSTM,
+Siamese CNN+Transformer, and ResNet+Attention U-Net. Read this section
+before citing the results below -- what they demonstrate is narrower than
+it might first appear.
+
+**What's real**: every architecture is a genuine PyTorch implementation of
+its named components (real conv backbones, real `nn.TransformerEncoderLayer`
+multi-head attention, real LSTM/BiLSTM, a real shared-weight Siamese
+encoder, real residual blocks, a real attention-gate mechanism per the
+Attention U-Net paper) -- trained with real forward/backward passes, not
+mocked. The Siamese model uses genuine bi-temporal input: paired t0/t1
+crops at the same pixel location, pixel-aligned (verified: identical
+`(6, 2776, 3264)` shape and affine transform between scenes).
+
+**What's *not* real segmentation/detection**: YOLO and U-Net were designed
+for bounding-box and pixel-mask outputs respectively. This project has
+neither -- only a single mining/not-mining label per chip (from the
+hard-case labeling tool, see `data/hard_cases/`) -- so every architecture
+here is adapted with a classification head. For the two segmentation-style
+architectures (U-Net+Transformer, ResNet+Attention U-Net), the decoder is
+architecturally intact (real upsampling, real skip connections, a real
+attention gate) but is global-average-pooled into a single classification
+logit rather than supervised against pixel masks, since none exist.
+
+**What the sample size means**: training data is the 32 usable labels
+(mining/not-mining, "unsure" excluded) from the 40-chip hard-case set --
+24 for training, 8 held out for testing, per `dataset.py`'s stratified
+split. Every model reaches 100% training accuracy and ~87.5% test accuracy
+(7/8 correct) after 30 epochs. **100% training accuracy with ~20-40k
+parameters on 24 examples is textbook overfitting, not a sign these are
+good models** -- with a test set of 8, "87.5% accuracy" means exactly
+7 or 8 correct, nothing more granular is statistically meaningful. Treat
+these results as confirmation that each architecture is correctly wired
+end-to-end (real gradients flow, real predictions come out), not as
+validated performance claims -- that would require the labeled image
+dataset (segmentation masks, hundreds+ of examples) this project doesn't
+have. See `data/hybrid_models_results/hybrid_results.json` for full
+per-model metrics.
+
+To run: `pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu`,
+then `python -m mining_detector.hybrid_models.train` (PYTHONPATH=src).
