@@ -40,6 +40,21 @@ def test_single_image_model_gradients_flow(name):
     assert any(g is not None and torch.any(g != 0) for g in grads)
 
 
+def test_resnet_attention_unet_native_resolution_flag():
+    from mining_detector.hybrid_models.models import ResNetAttentionUNet
+    x = torch.rand(2, 3, 64, 64)
+
+    default_model = ResNetAttentionUNet()
+    native_model = ResNetAttentionUNet(native_resolution=True)
+
+    # Both must still produce a map matching the input resolution after
+    # interpolation, regardless of internal decoder resolution.
+    assert default_model(x, return_map=True).shape == (2, 64, 64)
+    assert native_model(x, return_map=True).shape == (2, 64, 64)
+    assert native_model.native_resolution is True
+    assert default_model.native_resolution is False
+
+
 def test_siamese_shares_weights_across_both_inputs():
     from mining_detector.hybrid_models.models import SiameseCNNTransformer
     model = SiameseCNNTransformer()

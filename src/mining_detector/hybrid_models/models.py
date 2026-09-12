@@ -231,7 +231,7 @@ class ResNetAttentionUNet(nn.Module):
     global-average-pooled into the classification decision.
     """
 
-    def __init__(self, base_ch: int = 16):
+    def __init__(self, base_ch: int = 16, native_resolution: bool = False):
         super().__init__()
         self.stem = _conv_block(3, base_ch, stride=2)       # 64 -> 32
         self.res1 = ResidualBlock(base_ch)
@@ -241,7 +241,23 @@ class ResNetAttentionUNet(nn.Module):
         self.up = nn.ConvTranspose2d(base_ch * 2, base_ch, kernel_size=2, stride=2)  # 16 -> 32
         self.attn_gate = AttentionGate(base_ch, base_ch, base_ch // 2)
         self.dec = _conv_block(base_ch * 2, base_ch, stride=1)
-        self.out_conv = nn.Conv2d(base_ch, 1, kernel_size=1)
+
+        # native_resolution=True adds a second upsampling stage to reach the
+        # input's full 64x64 resolution natively, instead of interpolating a
+        # 32x32 output up. This was tested (not just hypothesized) as an
+        # explanation for unet_transformer's edge over this model: it made
+        # things WORSE (IoU 0.532 -> 0.241 in our test), not better --
+        # likely because this stage has no skip connection or attention
+        # gate to guide it (none is available at 64x64 in this design), so
+        # it just adds unsupervised noise. Kept as an opt-in flag for
+        # transparency about what was tried, default False (the better
+        # setting) rather than removed.
+        self.native_resolution = native_resolution
+        if native_resolution:
+            self.up2 = nn.ConvTranspose2d(base_ch, base_ch // 2, kernel_size=2, stride=2)  # 32 -> 64
+            self.out_conv = nn.Conv2d(base_ch // 2, 1, kernel_size=1)
+        else:
+            self.out_conv = nn.Conv2d(base_ch, 1, kernel_size=1)
 
         self.head = nn.Linear(1, 1)
 
@@ -252,7 +268,10 @@ class ResNetAttentionUNet(nn.Module):
         up = self.up(bottleneck)           # (B, base_ch, 32, 32)
         gated_skip = self.attn_gate(gate=up, skip=s1)
         d = self.dec(torch.cat([up, gated_skip], dim=1))
-        seg_map = self.out_conv(d)         # (B, 1, 32, 32)
+
+        if self.native_resolution:
+            d = self.up2(d)                # (B, base_ch/2, 64, 64)
+        seg_map = self.out_conv(d)         # (B, 1, 64, 64) if native_resolution else (B, 1, 32, 32)
 
         if return_map:
             return F.interpolate(seg_map, size=x.shape[-2:], mode="bilinear", align_corners=False).squeeze(1)

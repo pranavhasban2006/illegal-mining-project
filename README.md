@@ -415,10 +415,17 @@ Results: `data/hybrid_models_results/openpit_results.json`.
 tiles are also from those same 2 scenes) -- so this measures interpolation
 within two known mining sites, not generalization to a genuinely new
 location. `resnet_attention_unet` underperforming `unet_transformer` on
-segmentation is a real, reproducible result in our tests, not a bug --
-plausibly because its decoder produces a coarser native resolution (32x32,
-upsampled to match) versus `unet_transformer`'s native 64x64 output, though
-we have not isolated the exact cause. `siamese_cnn_transformer` is
+segmentation is a real, reproducible result in our tests, not a bug. We
+hypothesized this was because its decoder produces a coarser native
+resolution (32x32, upsampled to match) versus `unet_transformer`'s native
+64x64 output -- and tested that directly (`ResNetAttentionUNet(native_resolution=True)`
+in `models.py`, a second upsampling stage reaching full 64x64). **The
+hypothesis was wrong**: native resolution made it worse, not better (IoU
+0.532 -> 0.241), most likely because that extra stage has no skip
+connection or attention gate to guide it (none is available at 64x64 in
+this architecture), so it just adds unsupervised noise. Kept as an opt-in
+flag (default off, the better setting) for transparency about what was
+tried; the real explanation for the gap remains open. `siamese_cnn_transformer` is
 intentionally NOT retrained on this dataset: it needs genuine bi-temporal
 pairs, which this single-date dataset doesn't have, so it correctly stays
 on the 32 real paired t0/t1 hard-case chips instead of being forced onto
