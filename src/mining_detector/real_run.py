@@ -18,12 +18,15 @@ import json
 import os
 import geopandas as gpd
 
-from . import config, preprocess, real_labels, weak_labels, hard_case_labels, detection, change_detection, licensing, alerts, visualize
+import numpy as np
+
+from . import config, preprocess, real_labels, weak_labels, hard_case_labels, detection, change_detection, licensing, alerts, visualize, terrain as terrain_mod
 
 T0_DIR = "data/raw/t0_scene_2025"  # 2025-07-27 -- same calendar day, prior year
 T1_DIR = "data/raw/test_scene"     # 2026-07-27 -- see config.py for why same-month matters
 CONCESSIONS_PATH = "data/leases/madre_de_dios_concessions.geojson"
 HARD_CASES_DIR = "data/hard_cases"
+ELEVATION_CACHE_PATH = "data/raw/elevation_cache.npy"
 
 
 def _band_paths(scene_dir: str) -> dict:
@@ -68,16 +71,35 @@ def run(out_dir: str = "outputs"):
         print(f"[O2] Folded in {len(labeled_chips)} hand-labeled hard cases "
               f"from {HARD_CASES_DIR} (see validation_summary.md)")
 
+    print("[O2] Fetching terrain covariates (elevation, distance-to-water)...")
+    if os.path.exists(ELEVATION_CACHE_PATH):
+        elevation = np.load(ELEVATION_CACHE_PATH)
+    else:
+        elevation = terrain_mod.fetch_elevation(config.PILOT_AOI_BBOX, bands_t1.shape[1:], aoi_transform, crs)
+        os.makedirs(os.path.dirname(ELEVATION_CACHE_PATH), exist_ok=True)
+        np.save(ELEVATION_CACHE_PATH, elevation)
+    # Static covariates -- computed once from t1 and reused for both dates,
+    # so they can't themselves introduce a spurious cross-date signal (see
+    # the seasonal-drift fix in config.py for why that matters here).
+    dist_water = terrain_mod.compute_distance_to_water(bands_t1, pixel_size_m=10.0)
+    terrain_covariates = {"elevation": elevation, "dist_water": dist_water}
+    print(f"[O2] Elevation: {elevation.min():.0f}-{elevation.max():.0f}m, "
+          f"dist-to-water mean {dist_water.mean():.0f}m")
+
     detector = detection.MiningDetector()
-    report = detector.fit(bands_t1, labels, strategy="70:30", use_smote=True)
+    report = detector.fit(bands_t1, labels, strategy="70:30", use_smote=True, terrain=terrain_covariates)
     print(f"[O2] Split: {report['split_scheme']} holdout, SMOTE={report['used_smote']}")
     for name, res in report["results"].items():
         flag = " OVERFIT" if res["overfit_flag"] else ""
         print(f"    {name:28s} f1={res['test']['f1']:.3f} iou={res['test']['iou']:.3f}{flag}")
     print(f"[O2] Selected best model: {report['best_model_name']}")
+    fi = detector.feature_importances()
+    if fi:
+        ranked = sorted(fi.items(), key=lambda kv: -kv[1])
+        print(f"[O2] Feature importances (ranked): {ranked}")
 
-    proba_t0 = detector.predict_proba_map(bands_t0)
-    proba_t1 = detector.predict_proba_map(bands_t1)
+    proba_t0 = detector.predict_proba_map(bands_t0, terrain=terrain_covariates)
+    proba_t1 = detector.predict_proba_map(bands_t1, terrain=terrain_covariates)
 
     print("[O3] Running change detection...")
     new_mask = change_detection.new_disturbance_mask(proba_t0, proba_t1)

@@ -23,6 +23,15 @@ from sklearn.metrics import f1_score, jaccard_score, precision_score, recall_sco
 from imblearn.over_sampling import SMOTE
 
 from . import indices
+from .qc_smote import QCSMOTE
+
+
+def _make_oversampler(variant: str, random_state: int):
+    if variant == "standard":
+        return SMOTE(random_state=random_state)
+    if variant == "qc":
+        return QCSMOTE(random_state=random_state)
+    raise ValueError(f"Unknown smote_variant {variant!r}, expected 'standard' or 'qc'")
 
 SPLIT_SCHEMES = {"80:20": 0.20, "70:30": 0.30, "60:40": 0.40}
 
@@ -61,9 +70,9 @@ def _candidate_models():
     }
 
 
-def _build_dataset(bands: np.ndarray, labels: np.ndarray):
+def _build_dataset(bands: np.ndarray, labels: np.ndarray, terrain: dict | None = None):
     """labels: (H,W) with -1=unlabeled/excluded, 0=not-mining, 1=mining."""
-    feats = indices.compute_feature_stack(bands)
+    feats = indices.compute_feature_stack(bands, terrain=terrain)
     n_feat, h, w = feats.shape
     X_full = feats.reshape(n_feat, -1).T
     y_full = labels.reshape(-1)
@@ -97,10 +106,17 @@ def _evaluate(model, X, y) -> dict:
     }
 
 
-def run_holdout(bands, labels, split_scheme="70:30", use_smote=True, random_state=0):
-    """Single train/test split with SMOTE-on-train, multi-algorithm comparison."""
+def run_holdout(bands, labels, split_scheme="70:30", use_smote=True, random_state=0,
+                 terrain=None, smote_variant="standard"):
+    """Single train/test split with SMOTE-on-train, multi-algorithm comparison.
+
+    smote_variant: "standard" (imblearn SMOTE) or "qc" (QCSMOTE, see qc_smote.py --
+    a documented reimplementation of Upman & Gowda 2026's quality-controlled
+    oversampling, cited in Project Review 1 as this project's identified
+    next step beyond standard SMOTE).
+    """
     rng = np.random.default_rng(random_state)
-    X, y = _build_dataset(bands, labels)
+    X, y = _build_dataset(bands, labels, terrain=terrain)
     X, y = _subsample(X, y, rng)
 
     test_size = SPLIT_SCHEMES[split_scheme]
@@ -112,7 +128,7 @@ def run_holdout(bands, labels, split_scheme="70:30", use_smote=True, random_stat
     X_train_s, X_test_s = scaler.transform(X_train), scaler.transform(X_test)
 
     if use_smote and y_train.sum() >= 6:  # SMOTE needs a handful of minority samples
-        X_train_s, y_train = SMOTE(random_state=random_state).fit_resample(X_train_s, y_train)
+        X_train_s, y_train = _make_oversampler(smote_variant, random_state).fit_resample(X_train_s, y_train)
 
     results = {}
     for name, model in _candidate_models().items():
@@ -133,16 +149,18 @@ def run_holdout(bands, labels, split_scheme="70:30", use_smote=True, random_stat
         "scaler": scaler,
         "split_scheme": split_scheme,
         "used_smote": use_smote,
+        "smote_variant": smote_variant if use_smote else None,
         "results": results,
         "best_model_name": best_name,
         "best_model": results[best_name]["model"],
     }
 
 
-def run_cross_validation(bands, labels, n_splits=10, use_smote=True, random_state=0):
+def run_cross_validation(bands, labels, n_splits=10, use_smote=True, random_state=0, terrain=None,
+                          smote_variant="standard"):
     """10-fold stratified CV, SMOTE applied inside each fold's training portion."""
     rng = np.random.default_rng(random_state)
-    X, y = _build_dataset(bands, labels)
+    X, y = _build_dataset(bands, labels, terrain=terrain)
     X, y = _subsample(X, y, rng)
 
     skf = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=random_state)
@@ -157,7 +175,7 @@ def run_cross_validation(bands, labels, n_splits=10, use_smote=True, random_stat
         X_train_s, X_val_s = scaler.transform(X_train), scaler.transform(X_val)
 
         if use_smote and y_train.sum() >= 6:
-            X_train_s, y_train_fold = SMOTE(random_state=random_state).fit_resample(X_train_s, y_train)
+            X_train_s, y_train_fold = _make_oversampler(smote_variant, random_state).fit_resample(X_train_s, y_train)
         else:
             y_train_fold = y_train
 
@@ -173,7 +191,7 @@ def run_cross_validation(bands, labels, n_splits=10, use_smote=True, random_stat
     scaler = StandardScaler().fit(X)
     X_s = scaler.transform(X)
     if use_smote and y.sum() >= 6:
-        X_s, y_fit = SMOTE(random_state=random_state).fit_resample(X_s, y)
+        X_s, y_fit = _make_oversampler(smote_variant, random_state).fit_resample(X_s, y)
     else:
         y_fit = y
     best_model = candidates[best_name]
@@ -183,6 +201,7 @@ def run_cross_validation(bands, labels, n_splits=10, use_smote=True, random_stat
         "scaler": scaler,
         "n_splits": n_splits,
         "used_smote": use_smote,
+        "smote_variant": smote_variant if use_smote else None,
         "fold_scores": fold_scores,
         "mean_scores": mean_scores,
         "best_model_name": best_name,

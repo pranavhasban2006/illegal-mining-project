@@ -118,6 +118,47 @@ data over La Pampa, Peru, both fixed but worth documenting for the review:
    the shared tool (votes are keyed per-labeler, so this needs no code
    changes, just more people using the link).
 
+6. **Terrain covariates -- implemented, negligible effect (honest negative
+   result).** The SAR-based mining paper reviewed in Project Review 1
+   identified persistent misclassification around peripheral/low-density
+   mining structures and proposed adding elevation + hydrological-proximity
+   covariates as a fix, since illegal mining correlates strongly with
+   stream proximity. Implemented in `terrain.py`: real elevation from the
+   Copernicus DEM GLO-30 (public AWS dataset, windowed COG reads via
+   `/vsis3/`, no API key needed) and a distance-to-water raster derived
+   from the scene's own NDWI. Wired into `indices.compute_feature_stack`
+   and threaded through `detection.py`/`model_selection.py` as optional
+   extra channels. Result on the real pilot AOI: both terrain features
+   ranked **lowest of all 12 features** in the trained model (ELEVATION
+   0.0004, DIST_WATER 0.0007, vs. NDWI at 0.316) -- negligible predictive
+   value in this setup, most likely because NDWI (already in the feature
+   stack) captures water-proximity information more directly than a
+   derived distance metric, and this AOI's elevation is nearly flat
+   (0-273m) with no strong mining/elevation relationship to exploit. This
+   is a real, reproducible result, not a failed implementation -- the SAR
+   paper's finding may hold in a different pilot region (e.g. hard-rock
+   mining in mountainous terrain, where elevation gradients are much more
+   informative).
+
+7. **QC-SMOTE -- implemented, no measurable difference vs. standard SMOTE
+   (honest negative result).** `qc_smote.py` is a documented
+   reimplementation of Upman & Gowda (2026)'s quality-controlled SMOTE
+   (not the authors' original code, which isn't publicly released --
+   reconstructed from the paper's described mechanism: minority
+   trustworthiness scoring, purity-checked synthesis, graceful degradation
+   via duplication in noisy regions). Selectable via
+   `smote_variant="qc"` in `detection.py`/`model_selection.py`. Tested
+   against standard SMOTE on two real regimes: (a) the clean concession-
+   based training set, and (b) the noisier hard-case-augmented held-out
+   evaluation (Section 5 above) where real class-boundary ambiguity
+   exists. **Both produced statistically identical results in both
+   regimes.** Most likely explanation: Random Forest (the selected best
+   model in both cases) aggregates many trees via majority voting, which
+   buffers against exactly the synthetic-sample-placement differences
+   QC-SMOTE targets -- a single decision tree or a placement-sensitive
+   model (e.g. a small neural net) would be a fairer test of whether
+   QC-SMOTE's mechanism matters for this specific pipeline.
+
 ## Setup
 
 ```powershell

@@ -52,8 +52,17 @@ def mining_disturbance_index(bands: np.ndarray) -> np.ndarray:
     return np.clip(bare - 0.5 * veg - 0.3 * moist, -1, 1)
 
 
-def compute_feature_stack(bands: np.ndarray) -> np.ndarray:
+def compute_feature_stack(bands: np.ndarray, terrain: dict | None = None) -> np.ndarray:
     """Stacks raw bands + derived indices into the classifier's feature space.
+
+    terrain: optional {"elevation": (H,W) array, "dist_water": (H,W) array}
+    -- real terrain covariates (see terrain.py), addressing a future-work
+    item from the SAR-based mining paper reviewed in Project Review 1
+    (persistent misclassification of peripheral/low-density mining
+    structures; proposed fix was auxiliary elevation + hydrological-
+    proximity covariates, since illegal mining is strongly correlated with
+    stream proximity). Optional and backward compatible: omitting it
+    reproduces the original 10-feature stack exactly.
 
     Returns shape (n_features, H, W).
     """
@@ -62,6 +71,9 @@ def compute_feature_stack(bands: np.ndarray) -> np.ndarray:
         bands[NIR], bands[SWIR1], bands[SWIR2],
         ndvi(bands), ndmi(bands), bsi(bands), ndwi(bands),
     ]
+    if terrain:
+        feats.append(terrain["elevation"])
+        feats.append(terrain["dist_water"])
     return np.stack(feats, axis=0)
 
 
@@ -69,3 +81,5 @@ FEATURE_NAMES = [
     "B02", "B03", "B04", "B08", "B11", "B12",
     "NDVI", "NDMI", "BSI", "NDWI",
 ]
+
+TERRAIN_FEATURE_NAMES = ["ELEVATION", "DIST_WATER"]

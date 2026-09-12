@@ -58,3 +58,21 @@ def test_mining_disturbance_index_clipped_to_range():
     bands = _bands(blue=0.9, green=0.9, red=0.9, nir=0.01, swir1=0.9, swir2=0.9)
     result = indices.mining_disturbance_index(bands)
     assert np.all(result <= 1.0) and np.all(result >= -1.0)
+
+
+def test_compute_feature_stack_without_terrain_unchanged():
+    bands = _bands(0.1, 0.1, 0.1, 0.3, 0.2, 0.15, shape=(4, 4))
+    feats = indices.compute_feature_stack(bands)
+    assert feats.shape[0] == len(indices.FEATURE_NAMES)
+
+
+def test_compute_feature_stack_with_terrain_appends_two_channels():
+    bands = _bands(0.1, 0.1, 0.1, 0.3, 0.2, 0.15, shape=(4, 4))
+    terrain = {
+        "elevation": np.full((4, 4), 150.0, dtype=np.float32),
+        "dist_water": np.full((4, 4), 500.0, dtype=np.float32),
+    }
+    feats = indices.compute_feature_stack(bands, terrain=terrain)
+    assert feats.shape[0] == len(indices.FEATURE_NAMES) + 2
+    np.testing.assert_array_equal(feats[-2], terrain["elevation"])
+    np.testing.assert_array_equal(feats[-1], terrain["dist_water"])
