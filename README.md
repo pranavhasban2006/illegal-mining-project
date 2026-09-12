@@ -372,3 +372,36 @@ intentionally NOT retrained on this dataset: it needs genuine bi-temporal
 pairs, which this single-date dataset doesn't have, so it correctly stays
 on the 32 real paired t0/t1 hard-case chips instead of being forced onto
 data that doesn't match its design.
+
+### Lightweight-variant benchmark (compute-efficiency future work)
+
+MineFormer and TransSiamUNet (both cited in Project Review 1) name
+"further reduction of computational cost... for real-time or edge-device
+deployment" as future work. `benchmark_lite.py` builds a lightweight
+variant of each architecture (halved embedding width, single
+attention/LSTM layer where applicable -- see `LITE_KWARGS` in `models.py`)
+and trains/evaluates both scales on the exact same real data each
+architecture already uses:
+
+| Model | Params (full → lite) | Latency (full → lite) | Result (full → lite) |
+|---|---|---|---|
+| `unet_transformer` | 29,523 → 5,499 | 3.25ms → 0.96ms | IoU 0.582 → 0.285 (full clearly better) |
+| `resnet_attention_unet` | 35,532 → 9,128 | 1.27ms → 0.91ms | IoU 0.274 → **0.475 (lite better)** |
+| `yolo_vit_lstm` | 40,065 → 8,209 | 1.18ms → 0.79ms | acc 0.914 → 0.914, F1 0.807 → 0.792 (near-identical, 5x cheaper) |
+| `cnn_bilstm` | 22,145 → 7,217 | 0.66ms → 0.58ms | F1 **0.000 → 0.605 (lite far better)** |
+| `siamese_cnn_transformer` | 22,305 → 3,681 | 0.92ms → 0.71ms | acc/F1 identical, 6x cheaper |
+
+Run: `python -m mining_detector.hybrid_models.benchmark_lite` (PYTHONPATH=src).
+Results: `data/hybrid_models_results/lite_benchmark_results.json`.
+
+**This is not a uniform "smaller is worse" story, and that's the actual
+finding.** Two of five lite variants matched the full model at a fraction
+of the cost (Siamese, YOLO+ViT+LSTM); two lite variants **outperformed**
+their full counterpart (ResNet+Attention U-Net, CNN+BiLSTM -- the full
+CNN+BiLSTM collapsed to predicting only the majority class, F1=0.000
+despite 80% accuracy, a classic imbalance failure that the smaller model
+did not exhibit); only `unet_transformer` showed the expected
+capacity-accuracy tradeoff. This directly echoes the "When Less Is More"
+paper's own thesis (also cited in Project Review 1): on a small training
+set, a larger model's extra capacity does not reliably translate to
+better generalization, and can actively hurt it via overfitting.

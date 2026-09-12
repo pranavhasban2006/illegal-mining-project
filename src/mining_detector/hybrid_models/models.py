@@ -48,19 +48,20 @@ class YoloViTLSTM(nn.Module):
     -> LSTM over that token sequence -> classification head.
     """
 
-    def __init__(self, embed_dim: int = 32):
+    def __init__(self, embed_dim: int = 32, backbone_ch: int = 16, vit_layers: int = 2,
+                 vit_heads: int = 4, lstm_hidden: int = 32):
         super().__init__()
         self.backbone = nn.Sequential(
-            _conv_block(3, 16),    # 64 -> 32
-            _conv_block(16, 32),   # 32 -> 16
-            _conv_block(32, embed_dim),  # 16 -> 8
+            _conv_block(3, backbone_ch),        # 64 -> 32
+            _conv_block(backbone_ch, backbone_ch * 2),   # 32 -> 16
+            _conv_block(backbone_ch * 2, embed_dim),     # 16 -> 8
         )
         encoder_layer = nn.TransformerEncoderLayer(
-            d_model=embed_dim, nhead=4, dim_feedforward=64, batch_first=True
+            d_model=embed_dim, nhead=vit_heads, dim_feedforward=embed_dim * 2, batch_first=True
         )
-        self.vit = nn.TransformerEncoder(encoder_layer, num_layers=2)
-        self.lstm = nn.LSTM(embed_dim, hidden_size=32, batch_first=True)
-        self.head = nn.Linear(32, 1)
+        self.vit = nn.TransformerEncoder(encoder_layer, num_layers=vit_layers)
+        self.lstm = nn.LSTM(embed_dim, hidden_size=lstm_hidden, batch_first=True)
+        self.head = nn.Linear(lstm_hidden, 1)
 
     def forward(self, x):
         feat = self.backbone(x)                        # (B, C, 8, 8)
@@ -81,20 +82,21 @@ class UNetTransformer(nn.Module):
     still an active part of the forward pass rather than dead weight.
     """
 
-    def __init__(self, embed_dim: int = 32):
+    def __init__(self, embed_dim: int = 32, enc1_ch: int = 16, transformer_layers: int = 2,
+                 transformer_heads: int = 4):
         super().__init__()
-        self.enc1 = _conv_block(3, 16, stride=2)   # 64 -> 32
-        self.enc2 = _conv_block(16, embed_dim, stride=2)  # 32 -> 16
+        self.enc1 = _conv_block(3, enc1_ch, stride=2)   # 64 -> 32
+        self.enc2 = _conv_block(enc1_ch, embed_dim, stride=2)  # 32 -> 16
 
         encoder_layer = nn.TransformerEncoderLayer(
-            d_model=embed_dim, nhead=4, dim_feedforward=64, batch_first=True
+            d_model=embed_dim, nhead=transformer_heads, dim_feedforward=embed_dim * 2, batch_first=True
         )
-        self.bottleneck_transformer = nn.TransformerEncoder(encoder_layer, num_layers=2)
+        self.bottleneck_transformer = nn.TransformerEncoder(encoder_layer, num_layers=transformer_layers)
 
-        self.up1 = nn.ConvTranspose2d(embed_dim, 16, kernel_size=2, stride=2)  # 16 -> 32
-        self.dec1 = _conv_block(32, 16, stride=1)  # concat with enc1 skip (16+16=32)
-        self.up2 = nn.ConvTranspose2d(16, 8, kernel_size=2, stride=2)  # 32 -> 64
-        self.dec2 = nn.Conv2d(8, 1, kernel_size=1)
+        self.up1 = nn.ConvTranspose2d(embed_dim, enc1_ch, kernel_size=2, stride=2)  # 16 -> 32
+        self.dec1 = _conv_block(enc1_ch * 2, enc1_ch, stride=1)  # concat with enc1 skip
+        self.up2 = nn.ConvTranspose2d(enc1_ch, enc1_ch // 2, kernel_size=2, stride=2)  # 32 -> 64
+        self.dec2 = nn.Conv2d(enc1_ch // 2, 1, kernel_size=1)
 
         self.head = nn.Linear(1, 1)
 
@@ -160,17 +162,18 @@ class SiameseCNNTransformer(nn.Module):
     same location), matching this project's O3 change-detection framing.
     """
 
-    def __init__(self, embed_dim: int = 32):
+    def __init__(self, embed_dim: int = 32, backbone_ch: int = 16, transformer_layers: int = 2,
+                 transformer_heads: int = 4):
         super().__init__()
         self.shared_cnn = nn.Sequential(
-            _conv_block(3, 16),
-            _conv_block(16, embed_dim),
+            _conv_block(3, backbone_ch),
+            _conv_block(backbone_ch, embed_dim),
             nn.AdaptiveAvgPool2d(1),
         )
         encoder_layer = nn.TransformerEncoderLayer(
-            d_model=embed_dim, nhead=4, dim_feedforward=64, batch_first=True
+            d_model=embed_dim, nhead=transformer_heads, dim_feedforward=embed_dim * 2, batch_first=True
         )
-        self.transformer = nn.TransformerEncoder(encoder_layer, num_layers=2)
+        self.transformer = nn.TransformerEncoder(encoder_layer, num_layers=transformer_layers)
         self.head = nn.Linear(embed_dim, 1)
 
     def forward(self, x0, x1):
@@ -267,3 +270,28 @@ MODEL_REGISTRY = {
 }
 
 SIAMESE_MODELS = {"siamese_cnn_transformer"}
+
+# --------------------------------------------------------------------------
+# Lightweight variants -- addresses MineFormer's and TransSiamUNet's stated
+# future work ("further reduction of computational cost ... for real-time
+# or edge-device deployment"). Each halves embedding width and drops to a
+# single attention/LSTM layer where applicable, rather than an arbitrary
+# shrink -- a controlled comparison of the SAME architecture family at two
+# scales, matching how MineFormer and the "When Less Is More" paper (also
+# cited) frame the efficiency question.
+LITE_KWARGS = {
+    "yolo_vit_lstm": dict(embed_dim=16, backbone_ch=8, vit_layers=1, vit_heads=2, lstm_hidden=16),
+    "unet_transformer": dict(embed_dim=16, enc1_ch=8, transformer_layers=1, transformer_heads=2),
+    "cnn_bilstm": dict(cnn_channels=16, lstm_hidden=16),
+    "siamese_cnn_transformer": dict(embed_dim=16, backbone_ch=8, transformer_layers=1, transformer_heads=2),
+    "resnet_attention_unet": dict(base_ch=8),
+}
+
+
+def build_model(name: str, lite: bool = False) -> nn.Module:
+    """Constructs a model by registry name, either full-size (default
+    constructor args) or the lite variant (LITE_KWARGS)."""
+    cls = MODEL_REGISTRY[name]
+    if lite:
+        return cls(**LITE_KWARGS[name])
+    return cls()

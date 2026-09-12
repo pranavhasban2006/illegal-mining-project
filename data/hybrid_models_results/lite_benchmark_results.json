@@ -1,0 +1,114 @@
+{
+  "unet_transformer": {
+    "full": {
+      "test_dice_mean": 0.63028933537562,
+      "test_iou_mean": 0.582052676578952,
+      "n_params": 29523,
+      "latency_ms": 3.246226666669827
+    },
+    "lite": {
+      "test_dice_mean": 0.3231575928974074,
+      "test_iou_mean": 0.28484452392404125,
+      "n_params": 5499,
+      "latency_ms": 0.9576533333529369
+    }
+  },
+  "resnet_attention_unet": {
+    "full": {
+      "test_dice_mean": 0.3454308937075786,
+      "test_iou_mean": 0.2740711481315322,
+      "n_params": 35532,
+      "latency_ms": 1.2664399999872935
+    },
+    "lite": {
+      "test_dice_mean": 0.549036319078912,
+      "test_iou_mean": 0.4746174966081507,
+      "n_params": 9128,
+      "latency_ms": 0.9067966667013632
+    }
+  },
+  "yolo_vit_lstm": {
+    "full": {
+      "n": 128,
+      "tp": 23,
+      "fp": 9,
+      "tn": 94,
+      "fn": 2,
+      "accuracy": 0.9140625,
+      "precision": 0.71875,
+      "recall": 0.92,
+      "f1": 0.8070175438596492,
+      "n_params": 40065,
+      "latency_ms": 1.1782866666787108
+    },
+    "lite": {
+      "n": 128,
+      "tp": 21,
+      "fp": 7,
+      "tn": 96,
+      "fn": 4,
+      "accuracy": 0.9140625,
+      "precision": 0.75,
+      "recall": 0.84,
+      "f1": 0.7924528301886793,
+      "n_params": 8209,
+      "latency_ms": 0.7912833333345285
+    }
+  },
+  "cnn_bilstm": {
+    "full": {
+      "n": 128,
+      "tp": 0,
+      "fp": 0,
+      "tn": 103,
+      "fn": 25,
+      "accuracy": 0.8046875,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "n_params": 22145,
+      "latency_ms": 0.6638333332981953
+    },
+    "lite": {
+      "n": 128,
+      "tp": 23,
+      "fp": 28,
+      "tn": 75,
+      "fn": 2,
+      "accuracy": 0.765625,
+      "precision": 0.45098039215686275,
+      "recall": 0.92,
+      "f1": 0.6052631578947368,
+      "n_params": 7217,
+      "latency_ms": 0.5791033333177135
+    }
+  },
+  "siamese_cnn_transformer": {
+    "full": {
+      "n": 8,
+      "tp": 4,
+      "fp": 1,
+      "tn": 3,
+      "fn": 0,
+      "accuracy": 0.875,
+      "precision": 0.8,
+      "recall": 1.0,
+      "f1": 0.888888888888889,
+      "n_params": 22305,
+      "latency_ms": 0.9185900000375113
+    },
+    "lite": {
+      "n": 8,
+      "tp": 4,
+      "fp": 1,
+      "tn": 3,
+      "fn": 0,
+      "accuracy": 0.875,
+      "precision": 0.8,
+      "recall": 1.0,
+      "f1": 0.888888888888889,
+      "n_params": 3681,
+      "latency_ms": 0.7083233333105454
+    }
+  }
+}
