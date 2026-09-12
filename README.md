@@ -28,7 +28,7 @@ are linked from each row -- this table is the scannable summary.
 | 2 | QC-SMOTE (quality-controlled oversampling) | Upman & Gowda (arXiv 2606.24625) | ✅ Implemented & tested | **Negative**: statistically identical to standard SMOTE -- Random Forest's ensemble voting buffers against what QC-SMOTE targets. See "Known limitations" #7. |
 | 3 | Reduce computational cost for edge/real-time deployment | MineFormer, TransSiamUNet | ✅ Implemented & tested | **Mixed, genuinely informative**: 2 of 5 lite variants matched full accuracy at a fraction of the params/latency; 2 lite variants *outperformed* the full model; 1 showed the expected capacity-accuracy tradeoff. See "Lightweight-variant benchmark" below. |
 | 4 | Fuse fine-scale verified ground truth into a coarser satellite-scale model | ELDOR | ✅ Implemented & tested | **Positive**: human-verified hard-case labels folded into training measurably fixed a real precision failure -- held-out F1 0.833 → 0.909. See "Weak-label ceiling" in Known limitations. |
-| 5 | Multi-region generalization (reduce the training/transfer accuracy gap) | SAR-based mining paper, EuroMineNet | 🔄 In progress | Second real mining region identified (~45km from the pilot AOI, via real RAISG concession clustering, not a guessed coordinate); Sentinel-2 imagery downloading now. Will report the measured transfer-vs-in-domain F1 gap once complete -- not yet available. |
+| 5 | Multi-region generalization (reduce the training/transfer accuracy gap) | SAR-based mining paper, EuroMineNet | ✅ Implemented & tested | **Inconclusive by construction, not a clean positive**: transfer F1 = in-domain F1 = 1.000, gap = 0.000, on a second real region (~45km away, real RAISG concessions, `second_aoi.py`). But AOI2 was deliberately chosen as the *densest* concession cluster found, so its labels are 87.8% "mining" -- both scores hit the ceiling, meaning the test didn't actually discriminate. See "Multi-region generalization" below for the full caveat. |
 | 6 | Extending validation to non-mining land-cover domains (forest/agricultural) | TransSiamUNet | ❌ Not attempted | Out of scope for this phase; noted here rather than silently dropped. |
 | 7 | Adapting large-scale EO foundation models / continental-scale monitoring | EuroMineNet | ❌ Not attempted | Explicitly out of scope for an academic prototype timeline. |
 | 8 | Real bi-temporal segmentation training data for the Siamese architecture (OSCD dataset) | TransSiamUNet (uses OSCD) | ❌ Attempted, abandoned | HuggingFace CDN speed degraded to 43KB/s during download (would have taken 2.5+ hours); cut losses rather than stall further progress. Siamese model remains on the 32 real hard-case chips. |
@@ -178,6 +178,37 @@ data over La Pampa, Peru, both fixed but worth documenting for the review:
    QC-SMOTE targets -- a single decision tree or a placement-sensitive
    model (e.g. a small neural net) would be a fairer test of whether
    QC-SMOTE's mechanism matters for this specific pipeline.
+
+8. **Multi-region generalization -- implemented, result inconclusive by
+   construction (not a clean positive to cite).** `second_aoi.py` tests
+   whether the classifier trained on the Madre de Dios pilot AOI transfers
+   to a second, genuinely distinct real mining region ~45km west,
+   identified by clustering the actual RAISG concessions dataset (420 real
+   concessions once re-clipped for this AOI specifically -- an earlier
+   run of this script produced zero mining labels because it mistakenly
+   reused AOI1's narrowly-clipped concessions file, which doesn't extend
+   this far; caught and fixed before reporting results). Two models were
+   compared: the AOI1-trained classifier applied directly to AOI2 with no
+   retraining ("transfer"), vs. a fresh classifier trained and tested on
+   AOI2's own data ("in-domain").
+
+   **Result: transfer F1 = in-domain F1 = 1.000, gap = 0.000.** This is
+   NOT presented as "the model generalizes perfectly" -- it's a ceiling
+   effect, not a discriminating test. AOI2 was deliberately selected as
+   the *densest* concession cluster found anywhere in the RAISG dataset
+   (to guarantee real mining activity was present), which means 87.8% of
+   its labeled pixels are "mining" -- an unusually mining-saturated
+   landscape, not a representative or difficult test region. Both models
+   scoring 1.000 most likely reflects that the underlying task (obvious
+   excavated concession interior vs. obvious dense forest) stays easy in
+   both regions, the same ceiling effect seen in the original AOI1
+   algorithm comparison (Section on hybrid architectures) -- it says
+   nothing about whether generalization holds on the genuinely hard,
+   ambiguous cases (moderate vegetation loss, boundary zones) that
+   Section 6.3's hard-case validation already identified as this
+   pipeline's real weakness. A meaningful generalization test would need
+   AOI2's own hard-case-style ambiguous locations, not just its
+   concession/no-concession split.
 
 ## Setup
 
