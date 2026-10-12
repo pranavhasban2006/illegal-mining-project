@@ -6,7 +6,8 @@ these tests pass without it.
 
 import numpy as np
 import pytest
-import torch
+
+torch = pytest.importorskip("torch", reason="optional [hybrid] extra not installed")
 
 from mining_detector.hybrid_models import models as M
 from mining_detector.hybrid_models import openpit_dataset as D
