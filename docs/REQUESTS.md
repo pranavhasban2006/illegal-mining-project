@@ -73,7 +73,7 @@ Tested by Terminal B: geopandas 1.2.0, pyogrio 0.13.0, shapely 2.2.0, requests 2
 
 ## B5-1: packaging and test fixes in the working tree need committing (for Terminal A)
 
-Status: open
+Status: done (the setup.ps1 and pyproject.toml changes are committed; verified 2026-10-12)
 
 A fresh clone of the committed repo failed at `setup.ps1`: `mining_detector` was not
 importable, so the engine tests could not collect. Your working-tree fixes solve it: `pip install -e .`

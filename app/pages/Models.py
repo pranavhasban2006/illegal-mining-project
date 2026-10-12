@@ -50,20 +50,9 @@ if results_doc is None:
     st.stop()
 
 if results_doc["demo_only"]:
-    st.error(
-        "**These results are DEMO ONLY.** They were trained on synthetic stand-in data, "
-        "because the Open-Pit dataset was not available. Do not quote them as real accuracy."
-    )
+    st.warning("Trained on synthetic data. These scores are not real-world accuracy.")
 else:
     st.success(f"Trained on the Open-Pit dataset ({results_doc['n_train_patches']} training patches).")
-
-if not (OPENPIT_DIR).is_dir():
-    st.info(
-        "**Real training has not been run.** The Open-Pit dataset is not on this computer "
-        f"(looked in `{OPENPIT_DIR}`). Every score on this page comes from the synthetic stand-in. "
-        "Put the dataset's Data folder there and run "
-        "`python -m mining_detector.hybrid_models.train_openpit` to replace these numbers."
-    )
 
 st.caption(results_doc["honesty_note"])
 
