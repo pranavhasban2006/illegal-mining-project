@@ -1,0 +1,55 @@
+{
+  "aoi_bbox": [
+    -71.0,
+    -13.0,
+    -70.8,
+    -12.8
+  ],
+  "t0": "2025-06-01",
+  "t1": "2026-06-01",
+  "n_alerts": 12,
+  "total_new_disturbance_ha": 56.49,
+  "by_legal_status": {
+    "legal": 10.61,
+    "disputed": 18.29,
+    "illegal": 27.59
+  },
+  "model": {
+    "best": "random_forest",
+    "candidates": [
+      {
+        "name": "logistic_regression",
+        "f1_train": 0.78,
+        "f1_test": 0.76,
+        "overfit_flag": false
+      },
+      {
+        "name": "gradient_boosting",
+        "f1_train": 0.99,
+        "f1_test": 0.71,
+        "overfit_flag": true
+      },
+      {
+        "name": "random_forest",
+        "f1_train": 0.92,
+        "f1_test": 0.84,
+        "overfit_flag": false
+      }
+    ],
+    "feature_importance": {
+      "ndvi_drop": 0.41,
+      "bare_soil_index": 0.27,
+      "ndwi_change": 0.14,
+      "texture_contrast": 0.11,
+      "slope": 0.07
+    }
+  },
+  "data_sources": [
+    "SAMPLE fixture: synthetic values, not real Sentinel-2 imagery"
+  ],
+  "caveats": [
+    "SAMPLE DATA: every alert in this folder is invented for testing the app.",
+    "No real satellite image was analysed to produce these numbers.",
+    "F1 scores are on a synthetic split and must not be quoted as real accuracy."
+  ]
+}

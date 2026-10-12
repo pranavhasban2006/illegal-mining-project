@@ -1,0 +1,456 @@
+{
+  "type": "FeatureCollection",
+  "name": "SAMPLE alerts (synthetic)",
+  "crs": {
+    "type": "name",
+    "properties": {
+      "name": "urn:ogc:def:crs:OGC:1.3:CRS84"
+    }
+  },
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -70.94083,
+              -12.930723
+            ],
+            [
+              -70.93917,
+              -12.930723
+            ],
+            [
+              -70.93917,
+              -12.929277
+            ],
+            [
+              -70.94083,
+              -12.929277
+            ],
+            [
+              -70.94083,
+              -12.930723
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "id": 1,
+        "legal_status": "legal",
+        "confidence": 0.91,
+        "area_ha": 2.88,
+        "detected_on": "2026-06-01"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -70.911014,
+              -12.960633
+            ],
+            [
+              -70.908986,
+              -12.960633
+            ],
+            [
+              -70.908986,
+              -12.959367
+            ],
+            [
+              -70.911014,
+              -12.959367
+            ],
+            [
+              -70.911014,
+              -12.960633
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "id": 2,
+        "legal_status": "legal",
+        "confidence": 0.88,
+        "area_ha": 3.08,
+        "detected_on": "2026-06-01"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -70.870691,
+              -12.900678
+            ],
+            [
+              -70.869309,
+              -12.900678
+            ],
+            [
+              -70.869309,
+              -12.899322
+            ],
+            [
+              -70.870691,
+              -12.899322
+            ],
+            [
+              -70.870691,
+              -12.900678
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "id": 3,
+        "legal_status": "legal",
+        "confidence": 0.79,
+        "area_ha": 2.25,
+        "detected_on": "2026-06-01"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -70.840922,
+              -12.940543
+            ],
+            [
+              -70.839078,
+              -12.940543
+            ],
+            [
+              -70.839078,
+              -12.939457
+            ],
+            [
+              -70.840922,
+              -12.939457
+            ],
+            [
+              -70.840922,
+              -12.940543
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "id": 4,
+        "legal_status": "legal",
+        "confidence": 0.84,
+        "area_ha": 2.4,
+        "detected_on": "2026-06-01"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -70.961198,
+              -12.88095
+            ],
+            [
+              -70.958802,
+              -12.88095
+            ],
+            [
+              -70.958802,
+              -12.87905
+            ],
+            [
+              -70.961198,
+              -12.87905
+            ],
+            [
+              -70.961198,
+              -12.88095
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "id": 5,
+        "legal_status": "disputed",
+        "confidence": 0.66,
+        "area_ha": 5.46,
+        "detected_on": "2026-06-01"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -70.920875,
+              -12.850769
+            ],
+            [
+              -70.919125,
+              -12.850769
+            ],
+            [
+              -70.919125,
+              -12.849231
+            ],
+            [
+              -70.920875,
+              -12.849231
+            ],
+            [
+              -70.920875,
+              -12.850769
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "id": 6,
+        "legal_status": "disputed",
+        "confidence": 0.58,
+        "area_ha": 3.23,
+        "detected_on": "2026-06-01"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -70.891383,
+              -12.990814
+            ],
+            [
+              -70.888617,
+              -12.990814
+            ],
+            [
+              -70.888617,
+              -12.989186
+            ],
+            [
+              -70.891383,
+              -12.989186
+            ],
+            [
+              -70.891383,
+              -12.990814
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "id": 7,
+        "legal_status": "disputed",
+        "confidence": 0.71,
+        "area_ha": 5.4,
+        "detected_on": "2026-06-01"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -70.820968,
+              -12.870904
+            ],
+            [
+              -70.819032,
+              -12.870904
+            ],
+            [
+              -70.819032,
+              -12.869096
+            ],
+            [
+              -70.820968,
+              -12.869096
+            ],
+            [
+              -70.820968,
+              -12.870904
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "id": 8,
+        "legal_status": "disputed",
+        "confidence": 0.62,
+        "area_ha": 4.2,
+        "detected_on": "2026-06-01"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -70.951567,
+              -12.971176
+            ],
+            [
+              -70.948433,
+              -12.971176
+            ],
+            [
+              -70.948433,
+              -12.968824
+            ],
+            [
+              -70.951567,
+              -12.968824
+            ],
+            [
+              -70.951567,
+              -12.971176
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "id": 9,
+        "legal_status": "illegal",
+        "confidence": 0.94,
+        "area_ha": 8.84,
+        "detected_on": "2026-06-01"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -70.90129,
+              -12.92104
+            ],
+            [
+              -70.89871,
+              -12.92104
+            ],
+            [
+              -70.89871,
+              -12.91896
+            ],
+            [
+              -70.90129,
+              -12.91896
+            ],
+            [
+              -70.90129,
+              -12.92104
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "id": 10,
+        "legal_status": "illegal",
+        "confidence": 0.97,
+        "area_ha": 6.44,
+        "detected_on": "2026-06-01"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -70.861106,
+              -12.820859
+            ],
+            [
+              -70.858894,
+              -12.820859
+            ],
+            [
+              -70.858894,
+              -12.819141
+            ],
+            [
+              -70.861106,
+              -12.819141
+            ],
+            [
+              -70.861106,
+              -12.820859
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "id": 11,
+        "legal_status": "illegal",
+        "confidence": 0.89,
+        "area_ha": 4.56,
+        "detected_on": "2026-06-01"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -70.811429,
+              -12.96113
+            ],
+            [
+              -70.808571,
+              -12.96113
+            ],
+            [
+              -70.808571,
+              -12.95887
+            ],
+            [
+              -70.811429,
+              -12.95887
+            ],
+            [
+              -70.811429,
+              -12.96113
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "id": 12,
+        "legal_status": "illegal",
+        "confidence": 0.93,
+        "area_ha": 7.75,
+        "detected_on": "2026-06-01"
+      }
+    }
+  ]
+}
