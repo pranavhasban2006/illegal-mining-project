@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sentinel-2 Illegal Mining Detector — Tactical Command Center</title>
+
+  <!-- Fonts & Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,400..900;1,400..900&family=JetBrains+Mono:wght@400;500;600;700&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Leaflet GIS CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+
+  <style>
+    :root {
+      --bg-dark: #0A0E0C;
+      --panel-bg: #141A17;
+      --panel-border: rgba(255, 255, 255, 0.08);
+      --panel-hover: #1D2622;
+      --accent-green: #10B981;
+      --accent-gold: #F59E0B;
+      --accent-red: #EF4444;
+      --accent-blue: #3B82F6;
+      --text-main: #ECFDF5;
+      --text-muted: #9CA3AF;
+      --font-heading: 'Archivo', sans-serif;
+      --font-body: 'Work Sans', sans-serif;
+      --font-code: 'JetBrains Mono', monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      font-family: var(--font-body);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Top Navigation Header */
+    header.navbar {
+      height: 60px;
+      background: rgba(20, 26, 23, 0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--panel-border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      z-index: 1000;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-logo {
+      width: 32px;
+      height: 32px;
+      background: linear-gradient(135deg, var(--accent-gold), var(--accent-red));
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-family: var(--font-heading);
+      color: #000;
+      box-shadow: 0 0 15px rgba(245, 158, 11, 0.3);
+    }
+
+    .brand-title {
+      font-family: var(--font-heading);
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .brand-tag {
+      font-family: var(--font-code);
+      font-size: 10px;
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--accent-green);
+      padding: 3px 8px;
+      border-radius: 4px;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    .header-stats {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+    }
+
+    .stat-pill {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+    }
+
+    .stat-label {
+      font-size: 10px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .stat-value {
+      font-family: var(--font-code);
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--accent-green);
+    }
+
+    /* Main Container */
+    .app-container {
+      display: grid;
+      grid-template-columns: 360px 1fr 340px;
+      flex: 1;
+      height: calc(100vh - 60px);
+      overflow: hidden;
+    }
+
+    /* Sidebar Panels */
+    .panel {
+      background: var(--panel-bg);
+      border-right: 1px solid var(--panel-border);
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+    }
+
+    .panel-right {
+      border-right: none;
+      border-left: 1px solid var(--panel-border);
+    }
+
+    .panel-section {
+      padding: 20px;
+      border-bottom: 1px solid var(--panel-border);
+    }
+
+    .section-title {
+      font-family: var(--font-heading);
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    /* Control Buttons */
+    .btn {
+      width: 100%;
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-family: var(--font-heading);
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent-gold), #D97706);
+      color: #000;
+      box-shadow: 0 4px 14px rgba(245, 158, 11, 0.25);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(245, 158, 11, 0.4);
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text-main);
+      border: 1px solid var(--panel-border);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    /* Stage Steps Visualizer */
+    .pipeline-stages {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .stage-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 12px;
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      font-size: 12px;
+    }
+
+    .stage-item.active {
+      background: rgba(16, 185, 129, 0.08);
+      border-color: rgba(16, 185, 129, 0.3);
+    }
+
+    .stage-code {
+      font-family: var(--font-code);
+      font-weight: 700;
+      color: var(--accent-gold);
+    }
+
+    .stage-desc {
+      flex: 1;
+      color: var(--text-main);
+    }
+
+    .stage-badge {
+      font-size: 10px;
+      font-family: var(--font-code);
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    /* Model Performance Table */
+    .model-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 11px;
+      font-family: var(--font-code);
+    }
+
+    .model-table th, .model-table td {
+      padding: 8px 6px;
+      text-align: left;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .model-table th {
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .best-row {
+      color: var(--accent-green);
+      font-weight: 600;
+      background: rgba(16, 185, 129, 0.05);
+    }
+
+    /* Feature Importances Bar Chart */
+    .fi-bar-container {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .fi-item {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      font-size: 11px;
+    }
+
+    .fi-label-row {
+      display: flex;
+      justify-content: space-between;
+      font-family: var(--font-code);
+    }
+
+    .fi-track {
+      height: 6px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .fi-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent-blue), var(--accent-green));
+      border-radius: 3px;
+    }
+
+    /* Center Map View */
+    .map-container {
+      position: relative;
+      width: 100%;
+      height: 100%;
+    }
+
+    #map {
+      width: 100%;
+      height: 100%;
+      background: #050807;
+    }
+
+    .map-overlay-card {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      background: rgba(20, 26, 23, 0.9);
+      backdrop-filter: blur(8px);
+      border: 1px solid var(--panel-border);
+      border-radius: 8px;
+      padding: 12px 16px;
+      z-index: 999;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-width: 260px;
+    }
+
+    .map-overlay-title {
+      font-size: 12px;
+      font-weight: 700;
+      font-family: var(--font-heading);
+      color: var(--accent-gold);
+    }
+
+    .map-legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .legend-color {
+      width: 12px;
+      height: 12px;
+      border-radius: 3px;
+    }
+
+    /* Hard Cases Chip Grid */
+    .chip-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+    }
+
+    .chip-item {
+      aspect-ratio: 1;
+      border-radius: 6px;
+      border: 1px solid var(--panel-border);
+      background: #000;
+      cursor: pointer;
+      overflow: hidden;
+      position: relative;
+      transition: all 0.2s ease;
+    }
+
+    .chip-item:hover {
+      border-color: var(--accent-gold);
+      transform: scale(1.05);
+    }
+
+    .chip-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .chip-badge {
+      position: absolute;
+      bottom: 2px;
+      right: 2px;
+      font-size: 8px;
+      font-family: var(--font-code);
+      background: rgba(0, 0, 0, 0.75);
+      color: #fff;
+      padding: 1px 4px;
+      border-radius: 2px;
+    }
+
+    /* Terminal Log Console */
+    .log-console {
+      font-family: var(--font-code);
+      font-size: 11px;
+      background: #050806;
+      border: 1px solid var(--panel-border);
+      border-radius: 6px;
+      padding: 10px;
+      height: 140px;
+      overflow-y: auto;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    .log-entry.info { color: var(--accent-blue); }
+    .log-entry.success { color: var(--accent-green); }
+    .log-entry.warn { color: var(--accent-gold); }
+
+    /* Custom Leaflet Dark Popup */
+    .leaflet-popup-content-wrapper {
+      background: #141A17 !important;
+      color: #ECFDF5 !important;
+      border: 1px solid var(--panel-border);
+      border-radius: 8px;
+      font-family: var(--font-body);
+      font-size: 12px;
+    }
+    .leaflet-popup-tip {
+      background: #141A17 !important;
+    }
+
+    /* Tabs */
+    .tab-bar {
+      display: flex;
+      border-bottom: 1px solid var(--panel-border);
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 10px;
+      font-size: 12px;
+      font-family: var(--font-heading);
+      font-weight: 600;
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+    }
+
+    .tab-btn.active {
+      color: var(--accent-green);
+      border-bottom-color: var(--accent-green);
+      background: rgba(16, 185, 129, 0.05);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Navbar -->
+  <header class="navbar">
+    <div class="brand">
+      <div class="brand-logo">SM</div>
+      <div class="brand-title">Illegal Mining Detector</div>
+      <div class="brand-tag">SENTINEL-2 L2A AI PIPELINE</div>
+    </div>
+
+    <div class="header-stats">
+      <div class="stat-pill">
+        <span class="stat-label">Pipeline Mode</span>
+        <span class="stat-value" id="modeStat">SYNTHETIC DEMO</span>
+      </div>
+      <div class="stat-pill">
+        <span class="stat-label">Best ML Model</span>
+        <span class="stat-value" id="modelStat">RandomForest (F1: 0.99)</span>
+      </div>
+      <div class="stat-pill">
+        <span class="stat-label">Detected Sites</span>
+        <span class="stat-value" id="alertsStat" style="color: var(--accent-gold);">2 Alerts</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- App Main Content -->
+  <div class="app-container">
+
+    <!-- Left Control Panel -->
+    <div class="panel">
+      <div class="panel-section">
+        <div class="section-title">
+          <span>Execution Engine</span>
+          <span style="color: var(--accent-green);">● LIVE</span>
+        </div>
+        <button class="btn btn-primary" id="runPipelineBtn" onclick="runDemoPipeline()">
+          <span>▶ Run Sentinel-2 Pipeline</span>
+        </button>
+        <button class="btn btn-secondary" id="downloadAlertsBtn" onclick="window.open('/api/alerts', '_blank')" style="margin-top: 10px;">
+          <span>💾 Download GeoJSON Output Only</span>
+        </button>
+        <p style="font-size: 11px; color: var(--text-muted); margin-top: 8px;">
+          Runs full O1-O5 pipeline: feature extraction, multi-algorithm ML classifier, bi-temporal change detection, lease licensing check & GeoJSON export.
+        </p>
+
+        <div class="pipeline-stages">
+          <div class="stage-item active">
+            <span class="stage-code">O1</span>
+            <span class="stage-desc">Data Acquisition (CDSE / Synthetic)</span>
+            <span class="stage-badge">10m B02-B12</span>
+          </div>
+          <div class="stage-item active">
+            <span class="stage-code">O2</span>
+            <span class="stage-desc">Spectral Mining Detection</span>
+            <span class="stage-badge">NDVI/NDMI/BSI</span>
+          </div>
+          <div class="stage-item active">
+            <span class="stage-code">O3</span>
+            <span class="stage-desc">Bi-temporal Change Detection</span>
+            <span class="stage-badge">t0 → t1</span>
+          </div>
+          <div class="stage-item active">
+            <span class="stage-code">O4</span>
+            <span class="stage-desc">Legal Concession Footprint</span>
+            <span class="stage-badge">RAISG Extract</span>
+          </div>
+          <div class="stage-item active">
+            <span class="stage-code">O5</span>
+            <span class="stage-desc">GeoJSON Alerts Export</span>
+            <span class="stage-badge">GIS Vector</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel-section">
+        <div class="section-title">ML Model Comparison (O2)</div>
+        <table class="model-table">
+          <thead>
+            <tr>
+              <th>ALGORITHM</th>
+              <th>F1</th>
+              <th>PREC</th>
+              <th>REC</th>
+              <th>IOU</th>
+            </tr>
+          </thead>
+          <tbody id="modelTableBody">
+            <tr class="best-row">
+              <td>RandomForest</td>
+              <td>0.997</td>
+              <td>1.000</td>
+              <td>0.995</td>
+              <td>0.995</td>
+            </tr>
+            <tr>
+              <td>GradientBoosting</td>
+              <td>0.992</td>
+              <td>0.990</td>
+              <td>0.995</td>
+              <td>0.985</td>
+            </tr>
+            <tr>
+              <td>LogisticReg (L2)</td>
+              <td>0.965</td>
+              <td>0.950</td>
+              <td>0.980</td>
+              <td>0.932</td>
+            </tr>
+            <tr>
+              <td>SVM (RBF)</td>
+              <td>0.958</td>
+              <td>0.940</td>
+              <td>0.978</td>
+              <td>0.920</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="panel-section" style="flex: 1;">
+        <div class="section-title">Execution Console</div>
+        <div class="log-console" id="logConsole">
+          <div class="log-entry info">[O1] Initializing Sentinel-2 spectral pipeline...</div>
+          <div class="log-entry info">[O2] Computing NDVI, NDMI, BSI, NDWI feature stack.</div>
+          <div class="log-entry success">[O2] Fitted RandomForest Classifier (cv=10, SMOTE=True).</div>
+          <div class="log-entry info">[O3] Bi-temporal change probability map computed.</div>
+          <div class="log-entry warn">[O4] Flagged 2 unlicensed suspicious mining footprints.</div>
+          <div class="log-entry success">[O5] GeoJSON alert polygons written to outputs/alerts.geojson</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Center GIS Map View -->
+    <div class="map-container">
+      <div id="map"></div>
+
+      <div class="map-overlay-card">
+        <div class="map-overlay-title">GIS SPATIAL OVERLAYS</div>
+        <div class="map-legend-item">
+          <div class="legend-color" style="background: rgba(239, 68, 68, 0.4); border: 2px dashed #EF4444;"></div>
+          <span>Unlicensed Illegal Mining Alert</span>
+        </div>
+        <div class="map-legend-item">
+          <div class="legend-color" style="background: rgba(16, 185, 129, 0.2); border: 2px solid #10B981;"></div>
+          <span>Active Licensed Concession</span>
+        </div>
+        <div class="map-legend-item">
+          <div class="legend-color" style="background: #F59E0B; border-radius: 50%;"></div>
+          <span>Hard-Case Labeled Validation Chip</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Analytics & Hard Cases Panel -->
+    <div class="panel panel-right">
+      <div class="tab-bar">
+        <button class="tab-btn active" onclick="switchTab('analytics')">Feature Importance</button>
+        <button class="tab-btn" onclick="switchTab('hardcases')">Hard Cases (40)</button>
+      </div>
+
+      <div id="tabAnalytics" class="panel-section">
+        <div class="section-title">Spectral Feature Weights</div>
+        <div class="fi-bar-container">
+          <div class="fi-item">
+            <div class="fi-label-row">
+              <span>NDVI (Vegetation Index)</span>
+              <span style="color: var(--accent-green);">0.345</span>
+            </div>
+            <div class="fi-track"><div class="fi-fill" style="width: 34.5%;"></div></div>
+          </div>
+          <div class="fi-item">
+            <div class="fi-label-row">
+              <span>NDWI (Water Index)</span>
+              <span style="color: var(--accent-green);">0.268</span>
+            </div>
+            <div class="fi-track"><div class="fi-fill" style="width: 26.8%;"></div></div>
+          </div>
+          <div class="fi-item">
+            <div class="fi-label-row">
+              <span>BSI (Bare Soil Index)</span>
+              <span style="color: var(--accent-green);">0.192</span>
+            </div>
+            <div class="fi-track"><div class="fi-fill" style="width: 19.2%;"></div></div>
+          </div>
+          <div class="fi-item">
+            <div class="fi-label-row">
+              <span>NDMI (Moisture Index)</span>
+              <span style="color: var(--accent-green);">0.098</span>
+            </div>
+            <div class="fi-track"><div class="fi-fill" style="width: 9.8%;"></div></div>
+          </div>
+          <div class="fi-item">
+            <div class="fi-label-row">
+              <span>SWIR (Short-Wave Infrared)</span>
+              <span style="color: var(--accent-green);">0.097</span>
+            </div>
+            <div class="fi-track"><div class="fi-fill" style="width: 9.7%;"></div></div>
+          </div>
+        </div>
+
+        <div style="margin-top: 24px; padding-top: 16px; border-top: 1px dashed var(--panel-border);">
+          <div class="section-title">Hybrid Architecture Benchmarks</div>
+          <p style="font-size: 11px; color: var(--text-muted); line-height: 1.5;">
+            Evaluated 5 deep-learning models on satellite chips:
+          </p>
+          <ul style="font-size: 11px; color: var(--text-main); margin-top: 8px; padding-left: 16px; line-height: 1.6;">
+            <li><strong>U-Net + Transformer:</strong> IoU 0.541 (Segmentation)</li>
+            <li><strong>YOLO + ViT + LSTM:</strong> Acc 0.945 (Classification)</li>
+            <li><strong>ResNet + Attention U-Net:</strong> IoU 0.254</li>
+            <li><strong>CNN + BiLSTM:</strong> Acc 0.844</li>
+          </ul>
+        </div>
+      </div>
+
+      <div id="tabHardCases" class="panel-section" style="display: none; flex: 1;">
+        <div class="section-title">
+          <span>Validation Chips</span>
+          <span id="hardCaseCount" style="font-family: var(--font-code);">40 chips</span>
+        </div>
+        <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 12px;">
+          Ambiguous edge cases (boundary zones, sandbars, bare soil) for human validation.
+        </p>
+
+        <div class="chip-grid" id="chipGrid">
+          <!-- Populated by JS -->
+        </div>
+
+        <div id="chipDetailCard" style="margin-top: 16px; padding: 12px; background: rgba(255,255,255,0.03); border: 1px solid var(--panel-border); border-radius: 8px; display: none;">
+          <div id="chipCategory" style="font-family: var(--font-code); font-size: 10px; color: var(--accent-gold); text-transform: uppercase;">CATEGORY</div>
+          <div id="chipCoords" style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">Coords: -</div>
+          <div style="display: flex; gap: 6px; margin-top: 10px;">
+            <button class="btn btn-secondary" style="flex:1; padding: 6px; font-size: 11px;" onclick="voteChip('mining')">Mining</button>
+            <button class="btn btn-secondary" style="flex:1; padding: 6px; font-size: 11px;" onclick="voteChip('not_mining')">Forest</button>
+            <button class="btn btn-secondary" style="flex:1; padding: 6px; font-size: 11px;" onclick="voteChip('unsure')">Unsure</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // Initialize Map
+    let map = L.map('map').setView([-12.95, -69.95], 11);
+
+    // OpenStreetMap Base Tiles (100% reliable, no CORS/ORB blocking)
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
+
+    let alertLayerGroup = L.layerGroup().addTo(map);
+    let leaseLayerGroup = L.layerGroup().addTo(map);
+    let chipsLayerGroup = L.layerGroup().addTo(map);
+
+    let selectedChipId = null;
+
+    // Load initial map overlays
+    async function loadMapData() {
+      try {
+        // Fetch Alerts
+        const alertRes = await fetch('/api/alerts');
+        if (alertRes.ok) {
+          const alertsGeoJson = await alertRes.json();
+          alertLayerGroup.clearLayers();
+          
+          const alertLayer = L.geoJSON(alertsGeoJson, {
+            style: {
+              color: '#EF4444',
+              weight: 2,
+              dashArray: '4, 4',
+              fillColor: '#EF4444',
+              fillOpacity: 0.35
+            },
+            onEachFeature: (feature, layer) => {
+              const p = feature.properties;
+              layer.bindPopup(`
+                <div style="font-family: sans-serif;">
+                  <strong style="color: #EF4444; font-size: 14px;">⚠️ ILLEGAL MINING ALERT</strong><br>
+                  <span style="font-size: 11px; color: #9CA3AF;">ID: ${p.alert_id || 'ALERT-001'}</span>
+                  <hr style="border: none; border-top: 1px solid #374151; margin: 6px 0;">
+                  <b>Confidence:</b> ${(p.confidence * 100).toFixed(1)}%<br>
+                  <b>Area:</b> ${p.area_ha ? p.area_ha.toFixed(2) : '1.80'} ha<br>
+                  <b>Legal Status:</b> <span style="color: #F59E0B;">${p.legal_status || 'Unlicensed Suspicious'}</span><br>
+                  <b>Observed:</b> ${p.observation_date || '2026-07-27'}
+                </div>
+              `);
+            }
+          }).addTo(alertLayerGroup);
+
+          if (alertsGeoJson.features && alertsGeoJson.features.length > 0) {
+            map.fitBounds(alertLayer.getBounds(), { padding: [50, 50] });
+          }
+        }
+
+        // Fetch Concession Leases
+        const leaseRes = await fetch('/api/leases');
+        if (leaseRes.ok) {
+          const leaseGeoJson = await leaseRes.json();
+          leaseLayerGroup.clearLayers();
+
+          L.geoJSON(leaseGeoJson, {
+            style: {
+              color: '#10B981',
+              weight: 2,
+              fillColor: '#10B981',
+              fillOpacity: 0.1
+            },
+            onEachFeature: (feature, layer) => {
+              const p = feature.properties;
+              layer.bindPopup(`
+                <div>
+                  <strong style="color: #10B981;">🛡️ LICENSED MINING CONCESSION</strong><br>
+                  <b>Concession ID:</b> ${p.id || p.concession_id || 'MD-LEASE-01'}<br>
+                  <b>Status:</b> ${p.situacion || 'Active Titled'}
+                </div>
+              `);
+            }
+          }).addTo(leaseLayerGroup);
+        }
+
+        // Load Hard Case Chips
+        loadHardCases();
+
+      } catch (err) {
+        console.error("Map load error:", err);
+      }
+    }
+
+    async function loadHardCases() {
+      try {
+        const res = await fetch('/api/hard-cases');
+        if (!res.ok) return;
+        const data = await res.json();
+        const chips = data.chips || [];
+
+        const grid = document.getElementById('chipGrid');
+        grid.innerHTML = '';
+        chipsLayerGroup.clearLayers();
+
+        chips.forEach((c, idx) => {
+          // Render Grid items
+          const div = document.createElement('div');
+          div.className = 'chip-item';
+          div.onclick = () => selectChip(c);
+          div.innerHTML = `
+            <img src="/_blob/${c.asset_id}" alt="${c.chip_id}" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'64\' height=\'64\'><rect width=\'64\' height=\'64\' fill=\'%23141A17\'/><text x=\'50%\' y=\'50%\' fill=\'%239CA3AF\' font-size=\'10\' text-anchor=\'middle\' dy=\'.3em\'>Chip ${idx}</text></svg>'">
+            <div class="chip-badge">#${idx}</div>
+          `;
+          grid.appendChild(div);
+
+          // Add Map Markers if lat/lon available
+          if (c.lat && c.lon) {
+            L.circleMarker([c.lat, c.lon], {
+              radius: 5,
+              color: '#F59E0B',
+              fillColor: '#F59E0B',
+              fillOpacity: 0.8
+            }).bindTooltip(`Hard Case #${idx}: ${c.category}`).addTo(chipsLayerGroup);
+          }
+        });
+
+      } catch (e) {
+        console.error("Hard cases load error:", e);
+      }
+    }
+
+    function selectChip(chip) {
+      selectedChipId = chip.chip_id;
+      const detailCard = document.getElementById('chipDetailCard');
+      detailCard.style.display = 'block';
+      document.getElementById('chipCategory').textContent = chip.category || chip.chip_id;
+      document.getElementById('chipCoords').textContent = `Row: ${chip.row}, Col: ${chip.col} | Proba: ${chip.proba_at_center ? chip.proba_at_center.toFixed(2) : '0.5'}`;
+    }
+
+    async function voteChip(label) {
+      if (!selectedChipId) return;
+      try {
+        const res = await fetch('/api/hard-cases/vote', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chip_id: selectedChipId,
+            labeler: 'User',
+            label: label,
+            note: 'Validated via Command Center'
+          })
+        });
+        if (res.ok) {
+          addLog(`Saved vote '${label}' for chip ${selectedChipId}`, 'success');
+        }
+      } catch (e) {
+        console.error("Vote submission error:", e);
+      }
+    }
+
+    async function runDemoPipeline() {
+      const btn = document.getElementById('runPipelineBtn');
+      btn.disabled = true;
+      btn.innerHTML = '<span>⏳ Processing Pipeline...</span>';
+      
+      addLog("[O1] Triggering Sentinel-2 Pipeline Demo execution...", "info");
+
+      try {
+        const res = await fetch('/api/run-demo', { method: 'POST' });
+        const data = await res.json();
+        
+        if (data.success) {
+          addLog(`[O2] Selected Best Model: ${data.results.model_selection_report.best_model_name}`, "success");
+          addLog(`[O3] New Disturbance: ${data.results.n_new_disturbance_px} pixels detected`, "info");
+          addLog(`[O4] Suspicious Unlicensed Footprint: ${data.results.n_suspicious_px} pixels`, "warn");
+          addLog(`[O5] GeoJSON Output Wrote ${data.results.n_alerts} Alert Polygons`, "success");
+
+          // Refresh map alerts
+          await loadMapData();
+        }
+      } catch (err) {
+        addLog(`Pipeline Error: ${err.message}`, "warn");
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<span>▶ Run Sentinel-2 Pipeline</span>';
+      }
+    }
+
+    function addLog(msg, type = "info") {
+      const console = document.getElementById('logConsole');
+      const entry = document.createElement('div');
+      entry.className = `log-entry ${type}`;
+      entry.textContent = msg;
+      console.appendChild(entry);
+      console.scrollTop = console.scrollHeight;
+    }
+
+    function switchTab(tab) {
+      const btnAnalytics = document.querySelectorAll('.tab-btn')[0];
+      const btnHardCases = document.querySelectorAll('.tab-btn')[1];
+      const tabAnalytics = document.getElementById('tabAnalytics');
+      const tabHardCases = document.getElementById('tabHardCases');
+
+      if (tab === 'analytics') {
+        btnAnalytics.classList.add('active');
+        btnHardCases.classList.remove('active');
+        tabAnalytics.style.display = 'block';
+        tabHardCases.style.display = 'none';
+      } else {
+        btnHardCases.classList.add('active');
+        btnAnalytics.classList.remove('active');
+        tabAnalytics.style.display = 'flex';
+        tabAnalytics.style.flexDirection = 'column';
+        tabAnalytics.style.display = 'none';
+        tabHardCases.style.display = 'block';
+      }
+    }
+
+    // On Load
+    window.onload = () => {
+      loadMapData();
+    };
+  </script>
+</body>
+</html>

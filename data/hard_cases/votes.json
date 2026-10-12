@@ -38,5 +38,54 @@
   "chip_036_ambiguous_vegetation": "unsure",
   "chip_037_ambiguous_vegetation": "mining",
   "chip_038_ambiguous_vegetation": "unsure",
-  "chip_039_ambiguous_vegetation": "not_mining"
+  "chip_039_ambiguous_vegetation": "not_mining",
+  "chip_030_far_bare_random__user": {
+    "chip_id": "chip_030_far_bare_random",
+    "labeler": "User",
+    "labeler_slug": "user",
+    "label": "unsure",
+    "note": "Validated via Command Center"
+  },
+  "chip_003_boundary_zone__user": {
+    "chip_id": "chip_003_boundary_zone",
+    "labeler": "User",
+    "labeler_slug": "user",
+    "label": "unsure",
+    "note": "Validated via Command Center"
+  },
+  "chip_024_far_bare_random__user": {
+    "chip_id": "chip_024_far_bare_random",
+    "labeler": "User",
+    "labeler_slug": "user",
+    "label": "mining",
+    "note": "Validated via Command Center"
+  },
+  "chip_025_far_bare_random__user": {
+    "chip_id": "chip_025_far_bare_random",
+    "labeler": "User",
+    "labeler_slug": "user",
+    "label": "mining",
+    "note": "Validated via Command Center"
+  },
+  "chip_019_classifier_uncertain__user": {
+    "chip_id": "chip_019_classifier_uncertain",
+    "labeler": "User",
+    "labeler_slug": "user",
+    "label": "unsure",
+    "note": "Validated via Command Center"
+  },
+  "chip_005_boundary_zone__user": {
+    "chip_id": "chip_005_boundary_zone",
+    "labeler": "User",
+    "labeler_slug": "user",
+    "label": "mining",
+    "note": "Validated via Command Center"
+  },
+  "chip_020_classifier_uncertain__user": {
+    "chip_id": "chip_020_classifier_uncertain",
+    "labeler": "User",
+    "labeler_slug": "user",
+    "label": "mining",
+    "note": "Validated via Command Center"
+  }
 }

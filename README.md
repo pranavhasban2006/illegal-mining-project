@@ -224,11 +224,12 @@ $env:PYTHONPATH="src"
 .\.venv\Scripts\python.exe -m pytest tests/ -v
 ```
 
-44 tests covering every deterministic module (`indices.py`,
-`change_detection.py`, `licensing.py`, `alerts.py`, `hard_case_labels.py`,
-`model_selection.py`, `preprocess.py`, `weak_labels.py`, `real_labels.py`)
-against synthetic data with known-correct answers -- no CDSE credentials or
-downloaded imagery required.
+79 tests passing, 5 skipped (last run: `pytest tests/ -q`), covering every
+deterministic module (`indices.py`, `change_detection.py`, `licensing.py`,
+`alerts.py`, `hard_case_labels.py`, `model_selection.py`, `preprocess.py`,
+`weak_labels.py`, `real_labels.py`, `qc_smote.py`, `terrain.py`, and the
+hybrid-model dataset/benchmark code) against synthetic data with known-correct
+answers -- no CDSE credentials or downloaded imagery required.
 
 ## Run the demo (no credentials needed)
 
