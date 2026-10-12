@@ -38,7 +38,8 @@ hybrid = ["torch", "torchvision"]
 where = ["src"]
 
 [tool.pytest.ini_options]
-testpaths = ["tests/engine", "tests/experience"]
+testpaths = ["tests"]
+pythonpath = ["src"]
 markers = [
     "network: needs internet access to STAC catalogues (skipped by default)",
 ]

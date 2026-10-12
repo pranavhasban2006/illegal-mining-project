@@ -12,6 +12,7 @@ import pytest
 
 from mining_detector.change_detection import normalize_per_scene
 from mining_detector.detection import MiningDetector
+from mining_detector import model_selection as ms
 from mining_detector.model_selection import (
     fit_and_select,
     make_split,
@@ -66,10 +67,10 @@ def test_smote_runs_on_train_only_and_never_touches_test():
 
 def test_model_selection_finds_separable_signal():
     X, y, rows, cols = _synthetic_labelled(seed=4)
-    sel = fit_and_select(X, y, rows, cols, FEATURES, seed=4, cap=6000, block_px=100,
-                         compare_random_split=True)
+    sel = fit_and_select(X, y, rows, cols, FEATURES, seed=4, cap=6000, block_px=100)
     assert sel.best.f1_test > 0.9
-    assert sel.split_kind == "spatial_blocks"
+    assert sel.best.f1_val > 0.9
+    assert sel.split_kind == "spatial_blocks_three_way"
     names = [c.name for c in sel.candidates]
     assert {"logistic_l1", "logistic_l2", "random_forest", "svm_rbf", "gradient_boosting"} <= set(names)
     assert set(sel.feature_importance) == set(FEATURES)
@@ -117,3 +118,54 @@ def test_detector_rejects_wrong_feature_count():
     det = MiningDetector(model, ["a", "b", "c"])
     with pytest.raises(ValueError, match="features"):
         det.predict_proba_map(np.zeros((4, 4, 5), dtype=np.float32), np.ones((4, 4), dtype=bool))
+
+
+def test_test_split_is_never_used_during_selection(monkeypatch):
+    """The test rows must not reach model selection, and are scored exactly once.
+
+    select_on_validation is handed only train and validation arrays. score_test_once is the
+    only function that sees the test rows, and it must run exactly once, on the chosen model.
+    """
+    X, y, rows, cols = _synthetic_labelled(seed=6)
+    test_ids = set()
+    selection_inputs = []
+    scored = []
+
+    real_select = ms.select_on_validation
+    real_score = ms.score_test_once
+
+    def spy_select(X_tr, y_tr, X_va, y_va, seed, notes):
+        selection_inputs.extend([X_tr, X_va])
+        return real_select(X_tr, y_tr, X_va, y_va, seed, notes)
+
+    def spy_score(model, X_te, y_te):
+        test_ids.add(id(X_te))
+        scored.append(model)
+        return real_score(model, X_te, y_te)
+
+    monkeypatch.setattr(ms, "select_on_validation", spy_select)
+    monkeypatch.setattr(ms, "score_test_once", spy_score)
+
+    sel = fit_and_select(X, y, rows, cols, FEATURES, seed=6, cap=6000, block_px=100)
+
+    assert len(scored) == 1, "test split must be scored exactly once"
+    assert scored[0] is sel.best.model, "the single test score must be for the selected model"
+    assert len(test_ids) == 1
+    # The arrays given to selection must not be the test array.
+    assert all(id(arr) not in test_ids for arr in selection_inputs)
+    # select_on_validation has no test parameters at all.
+    import inspect
+    params = inspect.signature(real_select).parameters
+    assert not any("test" in p for p in params)
+
+
+def test_three_way_split_sets_are_block_disjoint():
+    X, y, rows, cols = _synthetic_labelled(seed=8)
+    block = spatial_block_ids(rows, cols, block_px=50)
+    sp = ms.make_three_way_split(block, y, np.random.default_rng(8))
+    blocks = [set(block[i].tolist()) for i in (sp.train, sp.val, sp.test)]
+    assert blocks[0].isdisjoint(blocks[1]) and blocks[0].isdisjoint(blocks[2])
+    assert blocks[1].isdisjoint(blocks[2])
+    assert len(sp.train) + len(sp.val) + len(sp.test) == len(y)
+    for idx in (sp.train, sp.val, sp.test):
+        assert len(np.unique(y[idx])) == 2

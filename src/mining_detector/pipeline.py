@@ -55,6 +55,29 @@ class RunResult:
     metrics: dict = field(default_factory=dict)
 
 
+class StageTimer:
+    """Records how many seconds each stage of a run takes, in the order they finish."""
+
+    def __init__(self) -> None:
+        self._last = time.time()
+        self.stages: dict[str, float] = {}
+
+    def lap(self, name: str) -> None:
+        now = time.time()
+        self.stages[name] = round(now - self._last, 2)
+        self._last = now
+
+    def total(self) -> float:
+        return round(sum(self.stages.values()), 2)
+
+
+def _timings(timer: StageTimer | None) -> dict:
+    """Per-stage seconds for report.json, or an empty dict when no timer was used."""
+    if timer is None:
+        return {}
+    return {**timer.stages, "total": timer.total()}
+
+
 def _noop_progress(fraction: float, message: str) -> None:
     """Default progress callback: log the step and do nothing else."""
     log.info("[%3d%%] %s", int(fraction * 100), message)
@@ -129,6 +152,7 @@ def detect_and_write(
     model_info: dict,
     progress: ProgressFn | None = None,
     validation_points=None,
+    timer: StageTimer | None = None,
 ) -> RunResult:
     """Shared core of the demo and live runs.
 
@@ -147,6 +171,8 @@ def detect_and_write(
     clean = morphological_cleanup(raw_mask)
     pixel_area_m2 = abs(transform.a * transform.e)
     keep = min_area_filter(clean, pixel_area_m2, cfg.min_area_ha)
+    if timer is not None:
+        timer.lap("find_new_disturbance")
 
     report_cb(0.75, "Vectorizing alerts and checking concession licences")
     polygons = mask_to_polygons(keep, transform, crs, prob=prob1)
@@ -157,6 +183,8 @@ def detect_and_write(
 
     report_cb(0.85, "Writing alerts.geojson, report.json and quicklook images")
     fc = build_feature_collection(polygons, labels, detected_on=cfg.t1)
+    if timer is not None:
+        timer.lap("licensing_and_vectorize")
     alerts_path = write_geojson(fc, out_dir / "alerts.geojson")
 
     by_status = {"legal": 0.0, "disputed": 0.0, "illegal": 0.0}
@@ -165,6 +193,8 @@ def detect_and_write(
     total_ha = float(sum(by_status.values()))
 
     _save_quicklooks(out_dir, stack0, stack1, prob1, keep)
+    if timer is not None:
+        timer.lap("quicklooks")
 
     summary = {
         "n_alerts": len(polygons),
@@ -182,6 +212,7 @@ def detect_and_write(
         "model": model_info,
         "data_sources": data_sources,
         "caveats": caveats,
+        "timings_s": _timings(timer),
     }
     if validation_points is not None and len(validation_points):
         from .validation import evaluate_points
@@ -363,23 +394,28 @@ def run_live(
         )
     np.random.seed(seed)
     t_start = time.time()
+    timer = StageTimer()
     log.info("Live run: bbox %s, %s vs %s, area %.0f km2", cfg.bbox, t0_date, t1_date, area)
 
     report_cb(0.02, f"Looking for the least cloudy scene near {t0_date}")
     choice0 = search_scenes(cfg.bbox, t0_date, max_cloud=max_cloud, window_days=cfg.search_window_days)
     report_cb(0.06, f"Looking for the least cloudy scene near {t1_date}")
     choice1 = search_scenes(cfg.bbox, t1_date, max_cloud=max_cloud, window_days=cfg.search_window_days)
+    timer.lap("scene_search")
 
     grid = target_grid(cfg.bbox)
     report_cb(0.10, f"Reading t0 bands ({choice0.describe()})")
     scene0 = load_scene(choice0, cfg.bbox, grid=grid, cache_dir=cache_dir)
+    timer.lap("read_bands_t0")
     report_cb(0.20, f"Reading t1 bands ({choice1.describe()})")
     scene1 = load_scene(choice1, cfg.bbox, grid=grid, cache_dir=cache_dir)
+    timer.lap("read_bands_t1")
 
     report_cb(0.30, "Computing spectral features for both dates")
     stack0, names = compute_feature_stack(scene0.bands)
     stack1, _ = compute_feature_stack(scene1.bands)
     valid0, valid1 = scene0.valid, scene1.valid
+    timer.lap("features")
     if valid0.mean() < 0.2 or valid1.mean() < 0.2:
         raise RuntimeError(
             "Too much cloud or no-data in one of the dates for this area "
@@ -397,6 +433,7 @@ def run_live(
         concessions_path=cfg.concessions_path,
         extra_labels_path=hard_cases_path,
     )
+    timer.lap("labels")
 
     report_cb(0.45, "Preparing training rows (each date normalized on its own)")
     norm0 = normalize_per_scene(stack0, valid0)
@@ -410,15 +447,18 @@ def run_live(
     Y = np.concatenate([y, y])
     R = np.concatenate([rows, rows])
     C = np.concatenate([cols, cols])
+    timer.lap("training_rows")
 
-    report_cb(0.55, "Comparing candidate models on a spatial hold-out (this takes a few minutes)")
+    report_cb(0.55, "Comparing candidate models on the validation split")
     selection = fit_and_select(X, Y, R, C, names, seed=seed)
     best = selection.best
-    report_cb(0.75, f"Best model: {best.name} (test F1 {best.f1_test:.3f})")
+    timer.lap("model_selection")
+    report_cb(0.75, f"Selected model: {best.name} (validation F1 {best.f1_val:.3f}, test F1 {best.f1_test:.3f})")
 
     detector = MiningDetector(best.model, names, normalize_per_scene=True)
     prob0 = detector.predict_proba_map(stack0, valid0)
     prob1 = detector.predict_proba_map(stack1, valid1)
+    timer.lap("predict_maps")
 
     model_info = {
         "best": best.name,
@@ -428,8 +468,14 @@ def run_live(
         "training_rows": int(len(Y)),
         "label_counts": labels.counts,
     }
-    if selection.random_split_f1:
-        model_info["comparison"] = selection.random_split_f1
+    model_info["headline"] = {
+        "metric": "f1",
+        "value": round(best.f1_test, 4),
+        "precision": round(best.precision_test, 4),
+        "recall": round(best.recall_test, 4),
+        "scored_on": "test split (three-way spatial blocks), scored once for the selected model",
+        "selected_by": "validation F1 (test split not used for selection)",
+    }
 
     data_sources = [
         f"Sentinel-2 L2A {choice0.item_id} ({choice0.source}), t0",
@@ -455,6 +501,7 @@ def run_live(
         concessions_utm=_load_concessions(cfg.concessions_path),
         cfg=cfg, bbox=cfg.bbox, data_sources=data_sources, caveats=caveats,
         model_info=model_info, progress=progress, validation_points=validation_points,
+        timer=timer,
     )
     if review_chips > 0:
         from .validation import make_review_chips
@@ -466,6 +513,7 @@ def run_live(
     result.metrics = {
         "best_model": best.name,
         "test_f1": round(best.f1_test, 4),
+        "validation_f1": round(best.f1_val, 4),
         "test_precision": round(best.precision_test, 4),
         "test_recall": round(best.recall_test, 4),
         "split": selection.split_kind,
@@ -491,9 +539,9 @@ def _build_caveats(labels, selection, choice0, choice1, cfg: Config) -> list[str
     """Plain-English limits that go into report.json. They are generated from the actual run."""
     caveats = [
         f"Training labels come from {labels.source.replace('_', ' ')}; mislabelled pixels cap the achievable accuracy.",
-        "Scores on the spatial hold-out describe similar terrain only. Accuracy on other regions or on ambiguous land (roads, quarries, farms, burn scars) is not measured here.",
+        "The test score describes this area only (held-out blocks inside it). Accuracy on other regions or on ambiguous land (roads, quarries, farms, burn scars) is not measured here.",
         "A near-perfect F1 on obvious cases does not imply accuracy on ambiguous land.",
-        "The model was selected by test F1 on the same hold-out, so the reported F1 is slightly optimistic.",
+        "The model was chosen on a validation split of different blocks; the headline F1 comes from a separate test split that was scored once. It is still a single area, so treat it as one estimate, not a general accuracy.",
         "Each alert is a satellite-detected change, not proof of illegal activity. Check the legal status against official concession records before acting.",
         f"Dates compared: {cfg.t0} vs {cfg.t1}. Clouds, shadows and sensor gaps are masked, so small patches can be missed.",
         f"Scenes used: {choice0.describe()}; {choice1.describe()}.",

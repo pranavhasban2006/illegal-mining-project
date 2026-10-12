@@ -33,6 +33,7 @@ if (Test-Path "requirements.txt") {
     Write-Host "requirements.txt not found, installing the app packages directly."
     & $VenvPython -m pip install --quiet streamlit folium streamlit-folium pandas numpy pillow matplotlib geopandas pyogrio shapely requests pytest
 }
+& $VenvPython -m pip install --quiet -e .
 if ($LASTEXITCODE -ne 0) {
     Write-Host "Package installation failed. Check your internet connection and run this again." -ForegroundColor Red
     exit 1
@@ -45,7 +46,7 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 Step "4/4 Tests"
-& $VenvPython -m pytest -q tests/engine tests/experience
+& $VenvPython -m pytest -q
 $testsOk = ($LASTEXITCODE -eq 0)
 if (-not $testsOk) {
     Write-Host "Some tests failed. Read the output above." -ForegroundColor Yellow
