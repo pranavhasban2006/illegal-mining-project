@@ -54,6 +54,8 @@ python -m mining_detector live --bbox -72.10 -14.45 -71.95 -14.30 --t0 2024-07-2
 
 **Do I need an internet connection?** Yes, for a live run. The demo works offline.
 
+**How long does a live run take?** On the test machine (Windows 11, CPU only), the example area took about 23 minutes. Most of that time is model comparison, so small areas and the Analyze page's progress bar are the way to keep it short.
+
 **Why are my alerts all "illegal"?** You did not give a concessions file, so there was nothing
 to compare them with.
 
