@@ -68,6 +68,11 @@ for msg in run.warnings:
     st.warning(msg)
 
 report = run.report
+if not run.is_sample and any("DEMO" in c.upper() for c in caveat_lines(report)):
+    st.warning(
+        "**This is DEMO output.** The engine made it from synthetic data to test the pipeline. "
+        "It does not describe any real place."
+    )
 st.caption(
     f"Area: west {report['aoi_bbox'][0]}, south {report['aoi_bbox'][1]}, "
     f"east {report['aoi_bbox'][2]}, north {report['aoi_bbox'][3]}. "

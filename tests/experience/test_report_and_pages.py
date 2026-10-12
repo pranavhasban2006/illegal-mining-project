@@ -97,3 +97,20 @@ def test_models_page_renders_without_exceptions():
     at.run()
     assert not at.exception, [e.value for e in at.exception]
     assert any("Honesty panel" in w.value for w in at.warning)
+
+
+def test_analyze_page_first_step_renders_without_exceptions():
+    from streamlit.testing.v1 import AppTest
+
+    at = AppTest.from_file(str(REPO / "app" / "pages" / "Analyze.py"), default_timeout=120)
+    at.run()
+    assert not at.exception, [e.value for e in at.exception]
+    assert any("km²" in m.value for m in at.markdown)
+
+
+def test_review_page_renders_without_exceptions():
+    from streamlit.testing.v1 import AppTest
+
+    at = AppTest.from_file(str(REPO / "app" / "pages" / "Review.py"), default_timeout=120)
+    at.run()
+    assert not at.exception, [e.value for e in at.exception]
