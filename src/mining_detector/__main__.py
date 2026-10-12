@@ -78,6 +78,18 @@ def build_parser() -> argparse.ArgumentParser:
         "--hard-cases", help="CSV of human-labelled points that override the model locally",
     )
     p_live.add_argument(
+        "--eval-hard-cases", action="store_true",
+        help="with --hard-cases: split the labels in half and measure the gain from training "
+             "on one half (runs the pipeline twice)",
+    )
+    p_live.add_argument(
+        "--validation", help="hand-labelled check points (CSV lon,lat,label or GeoJSON) to score against",
+    )
+    p_live.add_argument(
+        "--review-chips", type=int, default=0, metavar="N",
+        help="also export N stratified image chips and a labelling CSV for hard cases (default: 0)",
+    )
+    p_live.add_argument(
         "--max-aoi-km2", type=float, default=400.0,
         help="refuse areas larger than this many square km (default: 400)",
     )
@@ -113,19 +125,37 @@ def main(argv: list[str] | None = None) -> int:
             return 0
 
         if args.command == "live":
-            from .pipeline import run_live
+            from .pipeline import default_t0_for, run_live
 
             if args.example:
                 bbox, t0, t1 = DEFAULT_BBOX, EXAMPLE_T0, EXAMPLE_T1
             else:
-                if not (args.bbox and args.t0 and args.t1):
-                    parser.error("live needs --bbox, --t0 and --t1 (or use --example).")
-                bbox, t0, t1 = tuple(args.bbox), args.t0, args.t1
+                if not (args.bbox and args.t1):
+                    parser.error("live needs --bbox and --t1 (or use --example).")
+                bbox, t1 = tuple(args.bbox), args.t1
+                # Default: the same calendar date one year earlier, to avoid seasonal confusion.
+                t0 = args.t0 or default_t0_for(t1)
+            if args.eval_hard_cases:
+                if not args.hard_cases:
+                    parser.error("--eval-hard-cases needs --hard-cases.")
+                from .validation import holdout_gain
+
+                gain = holdout_gain(
+                    run_live, args.hard_cases, Path(args.out) / "hard_case_eval",
+                    aoi_bbox=bbox, t0_date=t0, t1_date=t1, concessions_path=args.concessions,
+                    progress=_progress_printer, max_cloud=args.max_cloud,
+                    max_aoi_km2=args.max_aoi_km2,
+                )
+                print("\nHard-case hold-out evaluation")
+                for k, v in gain.items():
+                    print(f"  {k}: {v}")
+                return 0
             result = run_live(
                 aoi_bbox=bbox, t0_date=t0, t1_date=t1, out_dir=args.out,
                 concessions_path=args.concessions, progress=_progress_printer,
                 max_cloud=args.max_cloud, max_aoi_km2=args.max_aoi_km2,
-                hard_cases_path=args.hard_cases,
+                hard_cases_path=args.hard_cases, validation_path=args.validation,
+                review_chips=args.review_chips,
             )
             _print_result(result)
             return 0

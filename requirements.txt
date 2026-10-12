@@ -15,3 +15,4 @@ pytest
 tqdm
 python-dotenv
 requests
+pyogrio>=0.9

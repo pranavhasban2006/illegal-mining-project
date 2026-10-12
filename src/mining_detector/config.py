@@ -9,8 +9,11 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from pathlib import Path
 
-# Example area: a patch of the La Pampa gold-mining region in Madre de Dios, Peru.
-DEFAULT_BBOX = (-69.60, -12.70, -69.45, -12.58)  # (west, south, east, north), EPSG:4326
+# Example area: a gold-mining cluster in southern Peru (near Cusco, around -72.0, -14.4).
+# Chosen because the Global Mining Footprint file has 13 usable footprints here. The earlier
+# La Pampa box (-69.60, -12.70, -69.45, -12.58) has none, so training labels cannot come
+# from that file there.
+DEFAULT_BBOX = (-72.10, -14.45, -71.95, -14.30)  # (west, south, east, north), EPSG:4326
 
 # Sentinel-2 L2A bands used by the pipeline (10 m and 20 m bands, resampled to 10 m).
 S2_BANDS = ("B02", "B03", "B04", "B08", "B11", "B12")

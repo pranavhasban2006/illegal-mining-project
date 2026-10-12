@@ -29,6 +29,8 @@ dependencies = [
 
 [project.optional-dependencies]
 test = ["pytest"]
+# Deep-learning hybrid models (Terminal B, phase B3). Install with: pip install -e .[hybrid]
+hybrid = ["torch", "torchvision"]
 
 [tool.setuptools.packages.find]
 where = ["src"]

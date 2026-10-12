@@ -59,6 +59,30 @@ python -m mining_detector fetch [--bbox W S E N] [--date YYYY-MM-DD]
 - The default date pair compares the same calendar date one year apart, to avoid a
   seasonal phenology confound.
 
+## 5b. Additions in phases A2 to A4
+
+- `report.json` also contains `validation` when check points are given:
+  `{n_points, n_scored, n_outside_grid, n_unsure_dropped, confusion: {tp,fp,tn,fn},
+  precision, recall, f1, caveat}`.
+- `model.candidates[i]` also has `precision_test` and `recall_test`.
+  `model.label_counts`, `model.split`, `model.training_rows` and `model.comparison` are added.
+- Extra CLI flags for `live`: `--validation PATH`, `--review-chips N`, `--hard-cases PATH`,
+  `--eval-hard-cases` (with `--hard-cases`, runs the pipeline twice and writes
+  `hard_case_eval/hard_case_holdout.json`), `--max-aoi-km2`, `--max-cloud`, `--example`.
+- `--t0` is optional for `live`: it defaults to the same calendar date one year before `--t1`.
+- `outputs/chips/` holds review chip PNGs and `review_template.csv`
+  (chip_id, category, file, lon, lat, label, notes). Label values are 0, 1 or `unsure`.
+- Check-point files (`--validation`) are CSV with lon, lat, label, or GeoJSON with a
+  `label` property. Rows marked `unsure` are ignored.
+- Hard-case files (`--hard-cases`) use the same format. Each point overrides the labels in a
+  neighbourhood (0 px by default).
+
+## 5c. Default example area
+
+`DEFAULT_BBOX = (-72.10, -14.45, -71.95, -14.30)`, a gold-mining cluster near Cusco.
+The earlier La Pampa box has no usable Global Mining Footprint polygons, so it cannot
+supply training labels. Mining polygons over 100 km2 are dropped as data errors.
+
 ## 6. Quality rules
 
 - Every engine module has pytest tests on synthetic data with a known answer.
