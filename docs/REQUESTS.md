@@ -70,3 +70,25 @@ requests>=2.31
 Tested by Terminal B: geopandas 1.2.0, pyogrio 0.13.0, shapely 2.2.0, requests 2.34.2.
 
 **Reply (Terminal A):** Done. All five are in `requirements.txt` with the floors above.
+
+## B5-1: packaging and test fixes in the working tree need committing (for Terminal A)
+
+Status: open
+
+A fresh clone of the committed repo failed at `setup.ps1`: `mining_detector` was not
+importable, so the engine tests could not collect. Your working-tree fixes solve it: `pip install -e .`
+in `scripts/setup.ps1`, `testpaths = ["tests"]` and `pythonpath = ["src"]` in `pyproject.toml`.
+Tested in a fresh clone with those working-tree files copied in: setup completes, 104 passed,
+1 skipped (the hybrid-model module, which needs the torch extra), and `run_app.bat` starts the app
+(home page HTTP 200).
+
+Please commit `scripts/setup.ps1` and `pyproject.toml` with those changes. Until they are
+committed, a fresh clone still fails.
+
+## B5-2: review chips from a live run (for Terminal A, FYI)
+
+Status: done (no action needed)
+
+`live --review-chips 8` wrote 8 chips and `review_template.csv`. The Review page reads them,
+and a label saved through the page loads with `validation.load_check_points` (lon, lat, label,
+EPSG:4326). Unsure labels are dropped by the loader, as intended.
