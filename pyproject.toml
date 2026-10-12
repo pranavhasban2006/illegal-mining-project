@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mining-detector"
+version = "0.1.0"
+description = "Finds new surface-mining disturbance in Sentinel-2 imagery and classifies it against concession polygons."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "numpy",
+    "scipy",
+    "scikit-learn",
+    "imbalanced-learn",
+    "rasterio",
+    "shapely",
+    "geopandas",
+    "pyproj",
+    "pystac-client",
+    "planetary-computer",
+    "stackstac",
+    "matplotlib",
+    "pillow",
+    "tqdm",
+    "python-dotenv",
+    "requests",
+]
+
+[project.optional-dependencies]
+test = ["pytest"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests/engine"]
+markers = [
+    "network: needs internet access to STAC catalogues (skipped by default)",
+]
+addopts = "-m 'not network'"

@@ -1,0 +1,17 @@
+numpy
+scipy
+scikit-learn
+imbalanced-learn
+rasterio
+shapely
+geopandas
+pyproj
+pystac-client
+planetary-computer
+stackstac
+matplotlib
+pillow
+pytest
+tqdm
+python-dotenv
+requests
