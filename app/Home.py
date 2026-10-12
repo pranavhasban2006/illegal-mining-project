@@ -36,10 +36,10 @@ if st.button("Try the demo", type="primary", use_container_width=True):
 st.subheader("Step 2: Analyze my area")
 st.write(
     "Pick a region, two dates, and optionally a concessions file. The tool then downloads "
-    "satellite images and runs the detection. This needs the detection engine, which is not "
-    "connected to this page yet."
+    "satellite images and runs the detection. A live run takes about 25 minutes on a normal "
+    "computer, so start with a small area."
 )
-st.button("Analyze my area (not available yet)", disabled=True, use_container_width=True,
-          help="Connects to the detection engine. Coming in a later step of the project.")
+if st.button("Analyze my area", type="primary", use_container_width=True):
+    st.switch_page("pages/Analyze.py")
 
 st.caption(f"Results are read from: `{OUTPUTS_DIR}` (sample data is used if that folder is empty).")

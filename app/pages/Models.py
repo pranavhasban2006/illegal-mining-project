@@ -17,6 +17,7 @@ from lib.paths import REPO_DIR
 RESULTS_DIR = REPO_DIR / "data" / "hybrid_models_results"
 WEIGHTS_DIR = RESULTS_DIR / "weights"
 sys.path.insert(0, str(REPO_DIR / "src"))
+from mining_detector.hybrid_models.openpit_dataset import DEFAULT_DATA_DIR as OPENPIT_DIR
 
 st.set_page_config(page_title="Models: Illegal Mining Detector", page_icon="🧠", layout="wide")
 st.title("Deep-learning models")
@@ -55,6 +56,14 @@ if results_doc["demo_only"]:
     )
 else:
     st.success(f"Trained on the Open-Pit dataset ({results_doc['n_train_patches']} training patches).")
+
+if not (OPENPIT_DIR).is_dir():
+    st.info(
+        "**Real training has not been run.** The Open-Pit dataset is not on this computer "
+        f"(looked in `{OPENPIT_DIR}`). Every score on this page comes from the synthetic stand-in. "
+        "Put the dataset's Data folder there and run "
+        "`python -m mining_detector.hybrid_models.train_openpit` to replace these numbers."
+    )
 
 st.caption(results_doc["honesty_note"])
 

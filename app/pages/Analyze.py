@@ -152,18 +152,28 @@ elif step == 3:
     st.write(f"Area: {bbox_area_km2(bbox):,.1f} km². Dates: {t0} and {t1}. "
              f"Concessions: {'none (all alerts will be illegal)' if not st.session_state.get('concessions_path') else Path(st.session_state['concessions_path']).name}.")
     job: RunJob | None = st.session_state.get("job")
+    offline = st.checkbox(
+        "Offline demo instead (synthetic data, about 10 seconds, no internet needed)",
+        help="Runs the engine's built-in demo. Its numbers are invented. Use it to see how the "
+             "results look before a real run.")
     if job is None:
         c1, c2 = st.columns(2)
         if c1.button("Back"):
             go(2)
             st.rerun()
-        if c2.button("Run the detector", type="primary"):
-            from mining_detector.pipeline import run_live
-
+        if c2.button("Run the demo" if offline else "Run the detector", type="primary"):
             out_dir = OUTPUTS_DIR / f"run_{datetime.now():%Y%m%d_%H%M%S}"
             job = RunJob()
-            job.start(run_live, aoi_bbox=tuple(bbox), t0_date=str(t0), t1_date=str(t1),
-                      out_dir=str(out_dir), concessions_path=st.session_state.get("concessions_path"))
+            if offline:
+                from mining_detector.pipeline import run_demo
+
+                job.start(run_demo, out_dir=str(out_dir))
+            else:
+                from mining_detector.pipeline import run_live
+
+                job.start(run_live, aoi_bbox=tuple(bbox), t0_date=str(t0), t1_date=str(t1),
+                          out_dir=str(out_dir),
+                          concessions_path=st.session_state.get("concessions_path"))
             st.session_state["job"] = job
             st.session_state["job_out"] = str(out_dir)
             st.rerun()

@@ -93,6 +93,21 @@ These are adapted from [docs/ENGINE_NOTES.md](docs/ENGINE_NOTES.md) and from the
 | Open-Pit Mining Areas Dataset | Training the deep models (not included; place it by hand) | No licence file is included. Check the source before use. | Cite the original authors. Look up the citation on the dataset's own page. |
 | Concessions file | Legal status of each alert | Depends on the source (for example RAISG). You supply it. | Name the source in your report. |
 
+## Project objectives and where they live
+
+Each objective is one part of the pipeline. The right-hand column says what you see in the app.
+
+| Objective | Modules (`src/mining_detector/`) | What you see in the app |
+| --- | --- | --- |
+| **O1 Data acquisition:** find, read and clean two satellite scenes | `data_sources.py`, `preprocess.py` | The Results caveats list the two scene dates and cloud cover; the Models and Results pages name the data sources. |
+| **O2 Mining detection:** learn what mining looks like from labelled examples | `indices.py`, `labels.py`, `detection.py`, `model_selection.py` | The "Model & trust" panel: candidate models, their F1 scores, overfitting flags and feature importance. |
+| **O3 Change detection:** find ground that changed between the two dates | `change_detection.py` | The change map and probability map pictures on the Results page. |
+| **O4 Legal status:** label each site legal, disputed or illegal against concessions | `licensing.py` | The colour of each alert (green, orange, red), the status filter, and the totals per status. |
+| **O5 Alert export:** hand the results to GIS software, spreadsheets or a report | `alerts.py` | The three download buttons on Results: GeoJSON, CSV and the one-page HTML report. |
+
+The deep-learning comparison (`src/mining_detector/hybrid_models/`) is separate from these
+objectives. It is shown on the Models page and is currently demo-only; see its honesty panel.
+
 ## Folder map
 
 ```
@@ -108,8 +123,25 @@ outputs/             one folder per analysis run
 
 ## Screenshots
 
-<!-- Screenshot placeholders: add images to docs/img/ and link them here. -->
+These were taken from the running app with `scripts/capture_screenshots.py`. The Results
+screenshots show the offline demo, so the DEMO warning is visible.
 
-- Home: `docs/img/home.png` (to be added)
-- Results: `docs/img/results.png` (to be added)
-- Analyze: `docs/img/analyze.png` (to be added)
+**Home**
+
+![Home page](docs/img/home.png)
+
+**Analyze my area (step 1 of 4)**
+
+![Analyze wizard, area step](docs/img/analyze.png)
+
+**Results: the DEMO warning, caveats and summary**
+
+![Results page](docs/img/results.png)
+
+**Results: the map (red = illegal, orange = disputed, green = legal)**
+
+![Results map](docs/img/results_map.png)
+
+**Deep-learning models (demo-only stand-in results)**
+
+![Models page](docs/img/models.png)
