@@ -18,11 +18,21 @@ MINING = 1
 NOT_MINING = 0
 
 
+def single_labeler_votes(votes: dict) -> dict:
+    """Keeps only the flat {chip_id: label} entries.
+
+    Votes saved by the dashboard use {"chip_id__labeler": {...}} keys. They
+    are skipped here until multi-labeler consensus is decided, so every
+    result built on the original labels stays reproducible.
+    """
+    return {k: v for k, v in votes.items() if isinstance(v, str)}
+
+
 def load_votes_and_chips(votes: dict, chips: list[dict]) -> list[dict]:
     """Joins vote labels onto chip metadata, dropping 'unsure' votes."""
     chip_by_id = {c["chip_id"]: c for c in chips}
     joined = []
-    for chip_id, label in votes.items():
+    for chip_id, label in single_labeler_votes(votes).items():
         if label == "unsure":
             continue
         chip = chip_by_id[chip_id]

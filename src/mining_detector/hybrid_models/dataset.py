@@ -22,6 +22,8 @@ from PIL import Image
 import torch
 from torch.utils.data import Dataset
 
+from mining_detector import hard_case_labels
+
 HARD_CASES_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "..", "data", "hard_cases")
 T0_CHIPS_DIR = os.path.join(HARD_CASES_DIR, "t0_chips")
 
@@ -32,6 +34,7 @@ def load_labeled_chips() -> list[dict]:
     """Returns [{chip_id, category, label, t1_path, t0_path}], unsure excluded."""
     chips = json.load(open(os.path.join(HARD_CASES_DIR, "chips_data.json")))
     votes = json.load(open(os.path.join(HARD_CASES_DIR, "votes.json")))
+    votes = hard_case_labels.single_labeler_votes(votes)
     chip_by_id = {c["chip_id"]: c for c in chips}
 
     records = []

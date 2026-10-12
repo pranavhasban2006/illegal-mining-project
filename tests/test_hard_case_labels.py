@@ -84,3 +84,15 @@ def test_evaluate_on_chips_confusion_matrix():
     assert metrics["fn"] == 1
     assert metrics["fp"] == 1
     assert metrics["accuracy"] == 0.5
+
+
+def test_dashboard_votes_are_skipped_not_crashing():
+    # Dashboard entries use "chip__labeler" keys with dict values; they must
+    # not reach the chip lookup (regression: KeyError on the first such key).
+    votes = {
+        "a": "mining",
+        "c": "not_mining",
+        "b__user": {"chip_id": "b", "label": "mining", "labeler": "user"},
+    }
+    joined = hcl.load_votes_and_chips(votes, _chips())
+    assert sorted(j["chip_id"] for j in joined) == ["a", "c"]
