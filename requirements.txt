@@ -1,18 +1,33 @@
-numpy
-scipy
-scikit-learn
-imbalanced-learn
-rasterio
-shapely
-geopandas
-pyproj
-pystac-client
-planetary-computer
-stackstac
-matplotlib
-pillow
-pytest
-tqdm
-python-dotenv
-requests
+# Everything needed to run the engine, the app and the tests (Python 3.11).
+# Install with: python -m pip install -r requirements.txt
+# Optional deep-learning extra (large download): see pyproject.toml, the [hybrid] extra.
+
+# Engine: numerical and geospatial
+numpy>=1.26
+scipy>=1.11
+scikit-learn>=1.4
+imbalanced-learn>=0.12
+rasterio>=1.3
+shapely>=2.0
+geopandas>=1.0
 pyogrio>=0.9
+pyproj>=3.6
+requests>=2.31
+pystac-client>=0.8
+planetary-computer>=1.0
+stackstac>=0.5
+tqdm>=4.66
+python-dotenv>=1.0
+
+# Plots and images
+matplotlib>=3.8
+pillow>=10.0
+pandas>=2.0
+
+# Web app
+streamlit>=1.40
+folium>=0.17
+streamlit-folium>=0.22
+
+# Tests
+pytest>=8.0

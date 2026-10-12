@@ -20,11 +20,8 @@ Step "1/4 Python environment"
 if (Test-Path $VenvPython) {
     Write-Host "Found .venv, reusing it."
 } else {
-    py -3.11 -m venv .venv
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host "Python 3.11 was not found. Install it from https://www.python.org/downloads/ (tick 'Add to PATH'), then run this again." -ForegroundColor Red
-        exit 1
-    }
+    . (Join-Path $PSScriptRoot "_python.ps1")
+    if (-not (New-ProjectVenv -ProjectDir $ProjectDir)) { exit 1 }
     Write-Host "Created .venv."
 }
 

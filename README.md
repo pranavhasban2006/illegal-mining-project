@@ -10,11 +10,11 @@ is compared with the official mining concession map and marked **legal**, **disp
 
 ## 60-second quick start (Windows)
 
-1. Install **Python 3.11** from python.org. Tick "Add Python to PATH".
-2. Open this folder and double-click **`scripts\setup.ps1`** (or run it from PowerShell:
-   `powershell -ExecutionPolicy Bypass -File scripts\setup.ps1`). It creates the environment,
-   installs the packages, downloads the global mining dataset and runs the tests. It is safe
-   to run again.
+1. Open this folder and run **`scripts\setup.ps1`** from PowerShell:
+   `powershell -ExecutionPolicy Bypass -File scripts\setup.ps1`. It creates the environment
+   (it fetches Python 3.11 itself if you do not have it), installs the packages, downloads
+   the global mining dataset and runs the tests. It is safe to run again. If you prefer, install
+   Python 3.11 yourself from python.org first.
 3. Double-click **`scripts\run_app.bat`**. Your browser opens the app.
 4. Click **Try the demo** to see a sample run. Its numbers are invented for testing.
 
@@ -54,7 +54,7 @@ python -m mining_detector live --bbox -72.10 -14.45 -71.95 -14.30 --t0 2024-07-2
 
 **Do I need an internet connection?** Yes, for a live run. The demo works offline.
 
-**How long does a live run take?** On the test machine (Windows 11, CPU only), the example area took about 23 minutes. Most of that time is model comparison, so small areas and the Analyze page's progress bar are the way to keep it short.
+**How long does a live run take?** On the test machine (Windows 11, CPU only), the example area took about 25 minutes (one run measured at 1,473 seconds). Most of that time is model comparison, so small areas and the Analyze page's progress bar are the way to keep it short.
 
 **Why are my alerts all "illegal"?** You did not give a concessions file, so there was nothing
 to compare them with.

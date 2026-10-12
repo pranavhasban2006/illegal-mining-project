@@ -17,11 +17,8 @@ $VenvPython = Join-Path $ProjectDir ".venv\Scripts\python.exe"
 
 if (-not (Test-Path $VenvPython)) {
     Write-Host "Creating the Python environment (.venv) with Python 3.11..."
-    py -3.11 -m venv .venv
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host "Could not find Python 3.11. Install it from https://www.python.org/downloads/ and run this again."
-        exit 1
-    }
+    . (Join-Path $PSScriptRoot "_python.ps1")
+    if (-not (New-ProjectVenv -ProjectDir $ProjectDir)) { exit 1 }
 }
 
 # Install the packages the app needs. pip skips anything already installed.

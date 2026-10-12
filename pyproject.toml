@@ -28,15 +28,17 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-test = ["pytest"]
-# Deep-learning hybrid models (Terminal B, phase B3). Install with: pip install -e .[hybrid]
+test = ["pytest>=8.0"]
+# Deep-learning hybrid models (phase B3). Install with: pip install -e .[hybrid]
+# Recommended: the CPU build, which is much smaller than the default wheel. Install it first:
+#   pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
 hybrid = ["torch", "torchvision"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
 
 [tool.pytest.ini_options]
-testpaths = ["tests/engine"]
+testpaths = ["tests/engine", "tests/experience"]
 markers = [
     "network: needs internet access to STAC catalogues (skipped by default)",
 ]
