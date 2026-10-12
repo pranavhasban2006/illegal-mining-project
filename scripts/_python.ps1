@@ -8,14 +8,29 @@
 function New-ProjectVenv {
     param([string]$ProjectDir)
 
+    # The callers use "Stop", but the launcher and uv print messages to stderr, which would
+    # abort the script before the fallback runs. Use "Continue" here and check exit codes.
+    $previousPreference = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    try {
+        return (Invoke-VenvSetup -ProjectDir $ProjectDir)
+    } finally {
+        $ErrorActionPreference = $previousPreference
+    }
+}
+
+function Invoke-VenvSetup {
+    param([string]$ProjectDir)
+
     $venvDir = Join-Path $ProjectDir ".venv"
 
-    py -3.11 -m venv $venvDir 2>$null
+    py -3.11 -m venv $venvDir *> $null
     if ($LASTEXITCODE -eq 0 -and (Test-Path (Join-Path $venvDir "Scripts\python.exe"))) {
         return $true
     }
 
     Write-Host "Python 3.11 was not found by the launcher. Using uv to get it (one-time download, about 30 MB)."
+    if (Test-Path $venvDir) { Remove-Item -Recurse -Force $venvDir }
     if (Get-Command uv -ErrorAction SilentlyContinue) {
         uv venv --python 3.11 $venvDir
     } else {
