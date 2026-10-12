@@ -74,6 +74,8 @@ def test_results_page_renders_sample_without_exceptions():
     from streamlit.testing.v1 import AppTest
 
     at = AppTest.from_file(str(REPO / "app" / "pages" / "1_Results.py"), default_timeout=120)
+    # Pin the sample run, so the test does not depend on whatever is in outputs/.
+    at.session_state["run_folder"] = str(SAMPLE_RUN_DIR)
     at.run()
     assert not at.exception, [e.value for e in at.exception]
     banners = [w.value for w in at.warning]
