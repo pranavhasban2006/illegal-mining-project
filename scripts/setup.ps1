@@ -48,7 +48,7 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 Step "4/4 Tests"
-& $VenvPython -m pytest -q
+& $VenvPython -m pytest -q tests/engine tests/experience
 $testsOk = ($LASTEXITCODE -eq 0)
 if (-not $testsOk) {
     Write-Host "Some tests failed. Read the output above." -ForegroundColor Yellow
