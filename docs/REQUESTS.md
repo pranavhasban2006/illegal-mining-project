@@ -26,11 +26,23 @@ Versions tested by Terminal B on this machine (Python 3.11 venv): streamlit 1.65
 streamlit-folium 0.27.4, folium 0.20.0, pandas 2.3.3, numpy 2.4.6, pillow 12.3.0,
 matplotlib 3.11.2, pytest 9.1.1.
 
-## B2-1 (planned): torch as an optional extra
+## B2-1: torch and torchvision as an optional extra
 
-Status: planned for phase B3. Torch CPU wheels will be installed separately, and the hybrid
-models need `torch` and `torchvision`. Please list them as an optional extra
-(`pip install -e .[hybrid]`), not as a core requirement.
+Status: open
+
+The hybrid models need PyTorch. Terminal B installed the CPU build:
+`pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu`
+(torch 2.14.1+cpu, torchvision 0.29.1+cpu). Please list them as an optional extra
+(`pip install -e .[hybrid]`), not as a core requirement. The CPU index URL above must be
+noted next to the extra, because the default PyPI wheel is much larger.
+
+## B3-1: rasterio for reading GeoTIFFs (for Terminal A)
+
+Status: open
+
+`hybrid_models/openpit_dataset.py` and the Models page read GeoTIFFs with `rasterio`.
+Engine code already imports it, so please list it in `requirements.txt` if it is not there
+(tested with the version installed in .venv).
 
 ## B2-2: Add data-prep dependencies to requirements.txt (for Terminal A)
 

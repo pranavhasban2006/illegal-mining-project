@@ -1,0 +1,107 @@
+{
+  "batch": 8,
+  "repeats": 10,
+  "cpu": "measured on the machine that ran this script",
+  "rows": [
+    {
+      "name": "UNetTransformer",
+      "variant": "full",
+      "params": 42929,
+      "latency_ms": 12.67,
+      "task": "segmentation",
+      "score": 0.0318,
+      "score_metric": "IoU",
+      "score_source": "standin"
+    },
+    {
+      "name": "UNetTransformer",
+      "variant": "lite",
+      "params": 9433,
+      "latency_ms": 8.41,
+      "task": "segmentation",
+      "score": 0.0315,
+      "score_metric": "IoU",
+      "score_source": "standin"
+    },
+    {
+      "name": "ResNetAttentionUNet",
+      "variant": "full",
+      "params": 31763,
+      "latency_ms": 13.92,
+      "task": "segmentation",
+      "score": 0.2497,
+      "score_metric": "IoU",
+      "score_source": "standin"
+    },
+    {
+      "name": "ResNetAttentionUNet",
+      "variant": "lite",
+      "params": 8225,
+      "latency_ms": 13.3,
+      "task": "segmentation",
+      "score": 0.0315,
+      "score_metric": "IoU",
+      "score_source": "standin"
+    },
+    {
+      "name": "YoloViTLSTM",
+      "variant": "full",
+      "params": 35506,
+      "latency_ms": 10.67,
+      "task": "patch classification",
+      "score": 0.6667,
+      "score_metric": "F1",
+      "score_source": "standin"
+    },
+    {
+      "name": "YoloViTLSTM",
+      "variant": "lite",
+      "params": 5562,
+      "latency_ms": 4.79,
+      "task": "patch classification",
+      "score": 0.4,
+      "score_metric": "F1",
+      "score_source": "standin"
+    },
+    {
+      "name": "CNNBiLSTM",
+      "variant": "full",
+      "params": 44802,
+      "latency_ms": 2.05,
+      "task": "patch classification",
+      "score": 0.8,
+      "score_metric": "F1",
+      "score_source": "standin"
+    },
+    {
+      "name": "CNNBiLSTM",
+      "variant": "lite",
+      "params": 19810,
+      "latency_ms": 1.05,
+      "task": "patch classification",
+      "score": 0.8,
+      "score_metric": "F1",
+      "score_source": "standin"
+    },
+    {
+      "name": "SiameseCNNTransformer",
+      "variant": "full",
+      "params": 18610,
+      "latency_ms": 5.57,
+      "task": "bi-temporal change",
+      "score": 0.5,
+      "score_metric": "F1",
+      "score_source": "standin"
+    },
+    {
+      "name": "SiameseCNNTransformer",
+      "variant": "lite",
+      "params": 3386,
+      "latency_ms": 3.55,
+      "task": "bi-temporal change",
+      "score": 0.8,
+      "score_metric": "F1",
+      "score_source": "standin"
+    }
+  ]
+}

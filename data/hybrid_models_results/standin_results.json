@@ -1,0 +1,407 @@
+{
+  "data_source": "synthetic_standin",
+  "demo_only": true,
+  "epochs_cap": 5,
+  "patience": 4,
+  "patch_size": 64,
+  "n_bands": 6,
+  "test_tile_ids": [
+    4,
+    6
+  ],
+  "n_train_patches": 63,
+  "n_test_patches": 18,
+  "honesty_note": "Test patches come from only the held-out source tiles. This measures how well the models fit new patches from the same scenes, not how well they generalise to new places.",
+  "results": [
+    {
+      "name": "UNetTransformer",
+      "lite": false,
+      "task": "segmentation",
+      "params": 42929,
+      "train_seconds": 3.4,
+      "best_epoch": 5,
+      "epochs_run": 5,
+      "history": [
+        {
+          "epoch": 1,
+          "train_loss": 1.3667,
+          "val_loss": 1.35336
+        },
+        {
+          "epoch": 2,
+          "train_loss": 1.32085,
+          "val_loss": 1.33445
+        },
+        {
+          "epoch": 3,
+          "train_loss": 1.34423,
+          "val_loss": 1.29963
+        },
+        {
+          "epoch": 4,
+          "train_loss": 1.2905,
+          "val_loss": 1.2322
+        },
+        {
+          "epoch": 5,
+          "train_loss": 1.26415,
+          "val_loss": 1.15168
+        }
+      ],
+      "iou": 0.0318,
+      "dice": 0.0617,
+      "demo_only": true
+    },
+    {
+      "name": "UNetTransformer",
+      "lite": true,
+      "task": "segmentation",
+      "params": 9433,
+      "train_seconds": 1.4,
+      "best_epoch": 5,
+      "epochs_run": 5,
+      "history": [
+        {
+          "epoch": 1,
+          "train_loss": 1.40751,
+          "val_loss": 1.38485
+        },
+        {
+          "epoch": 2,
+          "train_loss": 1.37892,
+          "val_loss": 1.35422
+        },
+        {
+          "epoch": 3,
+          "train_loss": 1.36845,
+          "val_loss": 1.32819
+        },
+        {
+          "epoch": 4,
+          "train_loss": 1.34934,
+          "val_loss": 1.30699
+        },
+        {
+          "epoch": 5,
+          "train_loss": 1.32825,
+          "val_loss": 1.27975
+        }
+      ],
+      "iou": 0.0315,
+      "dice": 0.061,
+      "demo_only": true
+    },
+    {
+      "name": "ResNetAttentionUNet",
+      "lite": false,
+      "task": "segmentation",
+      "params": 31763,
+      "train_seconds": 2.4,
+      "best_epoch": 5,
+      "epochs_run": 5,
+      "history": [
+        {
+          "epoch": 1,
+          "train_loss": 1.35452,
+          "val_loss": 1.29015
+        },
+        {
+          "epoch": 2,
+          "train_loss": 1.26051,
+          "val_loss": 1.14513
+        },
+        {
+          "epoch": 3,
+          "train_loss": 1.36516,
+          "val_loss": 1.06674
+        },
+        {
+          "epoch": 4,
+          "train_loss": 1.28947,
+          "val_loss": 1.052
+        },
+        {
+          "epoch": 5,
+          "train_loss": 1.27419,
+          "val_loss": 1.04426
+        }
+      ],
+      "iou": 0.2497,
+      "dice": 0.3996,
+      "demo_only": true
+    },
+    {
+      "name": "ResNetAttentionUNet",
+      "lite": true,
+      "task": "segmentation",
+      "params": 8225,
+      "train_seconds": 1.6,
+      "best_epoch": 5,
+      "epochs_run": 5,
+      "history": [
+        {
+          "epoch": 1,
+          "train_loss": 1.4483,
+          "val_loss": 1.45821
+        },
+        {
+          "epoch": 2,
+          "train_loss": 1.3745,
+          "val_loss": 1.43242
+        },
+        {
+          "epoch": 3,
+          "train_loss": 1.3768,
+          "val_loss": 1.402
+        },
+        {
+          "epoch": 4,
+          "train_loss": 1.32132,
+          "val_loss": 1.36471
+        },
+        {
+          "epoch": 5,
+          "train_loss": 1.29194,
+          "val_loss": 1.30171
+        }
+      ],
+      "iou": 0.0315,
+      "dice": 0.061,
+      "demo_only": true
+    },
+    {
+      "name": "YoloViTLSTM",
+      "lite": false,
+      "task": "patch classification",
+      "params": 35506,
+      "train_seconds": 1.0,
+      "best_epoch": 5,
+      "epochs_run": 5,
+      "history": [
+        {
+          "epoch": 1,
+          "train_loss": 0.70472,
+          "val_loss": 0.69292
+        },
+        {
+          "epoch": 2,
+          "train_loss": 0.69057,
+          "val_loss": 0.68821
+        },
+        {
+          "epoch": 3,
+          "train_loss": 0.67989,
+          "val_loss": 0.67815
+        },
+        {
+          "epoch": 4,
+          "train_loss": 0.65713,
+          "val_loss": 0.65667
+        },
+        {
+          "epoch": 5,
+          "train_loss": 0.59057,
+          "val_loss": 0.59982
+        }
+      ],
+      "accuracy": 0.7778,
+      "f1": 0.6667,
+      "demo_only": true
+    },
+    {
+      "name": "YoloViTLSTM",
+      "lite": true,
+      "task": "patch classification",
+      "params": 5562,
+      "train_seconds": 0.9,
+      "best_epoch": 5,
+      "epochs_run": 5,
+      "history": [
+        {
+          "epoch": 1,
+          "train_loss": 0.73402,
+          "val_loss": 0.69383
+        },
+        {
+          "epoch": 2,
+          "train_loss": 0.6983,
+          "val_loss": 0.68508
+        },
+        {
+          "epoch": 3,
+          "train_loss": 0.68395,
+          "val_loss": 0.68001
+        },
+        {
+          "epoch": 4,
+          "train_loss": 0.67949,
+          "val_loss": 0.67786
+        },
+        {
+          "epoch": 5,
+          "train_loss": 0.67196,
+          "val_loss": 0.67541
+        }
+      ],
+      "accuracy": 0.6667,
+      "f1": 0.4,
+      "demo_only": true
+    },
+    {
+      "name": "CNNBiLSTM",
+      "lite": false,
+      "task": "patch classification",
+      "params": 44802,
+      "train_seconds": 0.3,
+      "best_epoch": 5,
+      "epochs_run": 5,
+      "history": [
+        {
+          "epoch": 1,
+          "train_loss": 0.68961,
+          "val_loss": 0.6755
+        },
+        {
+          "epoch": 2,
+          "train_loss": 0.65835,
+          "val_loss": 0.65944
+        },
+        {
+          "epoch": 3,
+          "train_loss": 0.63667,
+          "val_loss": 0.64084
+        },
+        {
+          "epoch": 4,
+          "train_loss": 0.61397,
+          "val_loss": 0.61704
+        },
+        {
+          "epoch": 5,
+          "train_loss": 0.58649,
+          "val_loss": 0.58863
+        }
+      ],
+      "accuracy": 0.8889,
+      "f1": 0.8,
+      "demo_only": true
+    },
+    {
+      "name": "CNNBiLSTM",
+      "lite": true,
+      "task": "patch classification",
+      "params": 19810,
+      "train_seconds": 0.2,
+      "best_epoch": 5,
+      "epochs_run": 5,
+      "history": [
+        {
+          "epoch": 1,
+          "train_loss": 0.62823,
+          "val_loss": 0.67544
+        },
+        {
+          "epoch": 2,
+          "train_loss": 0.5816,
+          "val_loss": 0.65033
+        },
+        {
+          "epoch": 3,
+          "train_loss": 0.54237,
+          "val_loss": 0.60878
+        },
+        {
+          "epoch": 4,
+          "train_loss": 0.50752,
+          "val_loss": 0.56096
+        },
+        {
+          "epoch": 5,
+          "train_loss": 0.47266,
+          "val_loss": 0.51432
+        }
+      ],
+      "accuracy": 0.8889,
+      "f1": 0.8,
+      "demo_only": true
+    },
+    {
+      "name": "SiameseCNNTransformer",
+      "lite": false,
+      "task": "bi-temporal change",
+      "params": 18610,
+      "train_seconds": 0.8,
+      "best_epoch": 5,
+      "epochs_run": 5,
+      "history": [
+        {
+          "epoch": 1,
+          "train_loss": 0.64963,
+          "val_loss": 0.85597
+        },
+        {
+          "epoch": 2,
+          "train_loss": 0.53745,
+          "val_loss": 1.00887
+        },
+        {
+          "epoch": 3,
+          "train_loss": 0.40779,
+          "val_loss": 0.94385
+        },
+        {
+          "epoch": 4,
+          "train_loss": 0.26922,
+          "val_loss": 0.94642
+        },
+        {
+          "epoch": 5,
+          "train_loss": 0.19189,
+          "val_loss": 0.66921
+        }
+      ],
+      "accuracy": 0.7778,
+      "f1": 0.5,
+      "demo_only": true
+    },
+    {
+      "name": "SiameseCNNTransformer",
+      "lite": true,
+      "task": "bi-temporal change",
+      "params": 3386,
+      "train_seconds": 0.5,
+      "best_epoch": 5,
+      "epochs_run": 5,
+      "history": [
+        {
+          "epoch": 1,
+          "train_loss": 0.67114,
+          "val_loss": 0.77881
+        },
+        {
+          "epoch": 2,
+          "train_loss": 0.63776,
+          "val_loss": 0.72838
+        },
+        {
+          "epoch": 3,
+          "train_loss": 0.57317,
+          "val_loss": 0.66027
+        },
+        {
+          "epoch": 4,
+          "train_loss": 0.52093,
+          "val_loss": 0.62421
+        },
+        {
+          "epoch": 5,
+          "train_loss": 0.47195,
+          "val_loss": 0.58098
+        }
+      ],
+      "accuracy": 0.8889,
+      "f1": 0.8,
+      "demo_only": true
+    }
+  ]
+}
