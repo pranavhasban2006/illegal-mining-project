@@ -79,3 +79,12 @@ def test_results_page_renders_sample_without_exceptions():
     banners = [w.value for w in at.warning]
     assert any("SAMPLE" in b for b in banners)
     assert len(at.metric) >= 4
+
+
+def test_datasets_page_renders_without_exceptions():
+    from streamlit.testing.v1 import AppTest
+
+    at = AppTest.from_file(str(REPO / "app" / "pages" / "Datasets.py"), default_timeout=120)
+    at.run()
+    assert not at.exception, [e.value for e in at.exception]
+    assert any("Checklist" in h.value for h in at.subheader)

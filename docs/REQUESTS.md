@@ -31,3 +31,20 @@ matplotlib 3.11.2, pytest 9.1.1.
 Status: planned for phase B3. Torch CPU wheels will be installed separately, and the hybrid
 models need `torch` and `torchvision`. Please list them as an optional extra
 (`pip install -e .[hybrid]`), not as a core requirement.
+
+## B2-2: Add data-prep dependencies to requirements.txt (for Terminal A)
+
+Status: open
+
+`scripts/fetch_datasets.py` and the Datasets page need these. Please add them to
+`requirements.txt`:
+
+```
+geopandas>=1.0
+pyogrio>=0.9
+shapely>=2.0
+pyproj>=3.6
+requests>=2.31
+```
+
+Tested by Terminal B: geopandas 1.2.0, pyogrio 0.13.0, shapely 2.2.0, requests 2.34.2.
