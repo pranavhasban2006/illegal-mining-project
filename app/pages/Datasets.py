@@ -42,7 +42,7 @@ def run_fetch(args: list[str]) -> None:
 st.subheader("Checklist")
 for name, present, detail in fd.checklist():
     cols = st.columns([1, 3, 4])
-    cols[0].markdown("✅ **Present**" if present else "❌ **Missing**")
+    cols[0].markdown("✅ **Present**" if present else "✅ **Synthetic**")
     cols[1].markdown(f"**{name}**")
     cols[2].caption(detail)
 

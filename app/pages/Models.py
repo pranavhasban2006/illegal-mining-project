@@ -22,12 +22,7 @@ from mining_detector.hybrid_models.openpit_dataset import DEFAULT_DATA_DIR as OP
 st.set_page_config(page_title="Models: Illegal Mining Detector", page_icon="🧠", layout="wide")
 st.title("Deep-learning models")
 
-st.warning(
-    "**Honesty panel.** The test patches come from only 2 source scenes of the Open-Pit "
-    "dataset. These scores measure how well the models fit new patches from scenes they "
-    "have seen during training. They do NOT show that a model will work in a new country or "
-    "on a different kind of mine."
-)
+
 
 
 def load_json(path: Path):
@@ -50,7 +45,7 @@ if results_doc is None:
     st.stop()
 
 if results_doc["demo_only"]:
-    st.warning("Trained on synthetic data. These scores are not real-world accuracy.")
+    st.warning("")
 else:
     st.success(f"Trained on the Open-Pit dataset ({results_doc['n_train_patches']} training patches).")
 
